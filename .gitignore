@@ -49,3 +49,5 @@ po/*~
 rsconnect/
 
 *.csv
+manuscript.html
+/manuscript_files

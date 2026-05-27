@@ -110,9 +110,10 @@ simplify_reaction <- function(x) {
 
 ```{r}
 #| label: load-cleaned-data
+#| message: false
 
-# Load the cleaned and merged responses from data-process.qmd
-responses <- read_rds("data/responses_cleaned.rds")
+# Load the cleaned and merged responses from Zenodo (DOI-versioned archive)
+responses <- read_csv("https://zenodo.org/records/20403996/files/algorithmic_reform_survey.csv?download=1")
 
 age_group_levels <- c("15–24", "25–44", "45–59", "60–74", "75+")
 
@@ -3076,6 +3077,6 @@ Survey participants who answered "Yes" to the question "Have you ever felt that 
 
 > "I went to a clinic for a tooth ache once and it was really clear that they just wanted to pull it. They said would could save it, but it would be really expensive....as if I couldn't afford it."
 
-> "I feel like I have been to clinics where everyone shared the same fair complexion, and blonde hair & they were very rude to me. Made comments about they see weight struggles in Native Americans (I am not overweight, but they mentioned in passing). 
+> "I feel like I have been to clinics where everyone shared the same fair complexion, and blonde hair & they were very rude to me. Made comments about they see weight struggles in Native Americans (I am not overweight, but they mentioned in passing)." 
 
-> "I consider myself Native American, but there is a lot of mixed blood going back a few generations. In my case, how I am perceived is dependent on the individual person doing the perceiving. Sometimes I am seen as White, sometimes Native, and sometimes they just look me up and down and say, in a very queer tone, 'What are you?' 
+> "I consider myself Native American, but there is a lot of mixed blood going back a few generations. In my case, how I am perceived is dependent on the individual person doing the perceiving. Sometimes I am seen as White, sometimes Native, and sometimes they just look me up and down and say, in a very queer tone, 'What are you?'" 
