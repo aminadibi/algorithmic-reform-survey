@@ -39,10 +39,7 @@ quarto render manuscript.qmd --to docx
 
 ## Data
 
-The de-identified survey dataset is archived on Zenodo:
-
-- Record: <https://zenodo.org/records/20403996>
-- Direct download: <https://zenodo.org/records/20403996/files/algorithmic_reform_survey.csv?download=1>
+The de-identified survey dataset is archived on Zenodo <https://zenodo.org/records/20403996>
 
 The `load-cleaned-data` chunk in [manuscript.qmd](manuscript.qmd) reads the CSV directly from this URL, so no manual download is required to render the manuscript.
 
