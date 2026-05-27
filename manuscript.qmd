@@ -1,0 +1,3081 @@
+---
+title: "Multinational Public Opinion on Race, Ethnicity, and Algorithmic Reform in Medicine"
+format:
+  html: default
+  docx:
+    reference-doc: custom-reference-doc.docx
+execute:
+  echo: false
+  fig-dpi: 300
+tbl-cap-location: bottom
+crossref:
+  custom:
+    - kind: float
+      key: suppfig
+      latex-env: suppfig
+      reference-prefix: Figure E
+      space-before-numbering: false
+    - kind: float
+      key: supptab
+      latex-env: supptab
+      reference-prefix: Table E
+      space-before-numbering: false
+author:
+  - name: Amin Adibi MSc
+    email: amin.adibi@ubc.ca
+    affiliation:
+      - id: ubc
+        name: Faculty of Pharmaceutical Sciences, University of British Columbia
+      - id: legacy
+        name: Legacy for Airway Health, Vancouver Coastal Health Institute
+  - name: Kristina Xingyu Le
+    affiliation:
+      - ref: ubc
+  - name: Emma Pierson PhD
+    affiliation:
+      - name: Department of Electrical Engineering and Computer Sciences, University of California, Berkeley
+      - name: UCSF/UC Berkeley Joint Program in Computational Precision Health, University of California, Berkeley
+  - name: James A. Diao MD MPhil
+    affiliation:
+      - name: Department of Biomedical Informatics, Harvard Medical School
+      - name: Department of Medicine, Brigham and Women’s Hospital
+  - name: Nazafarin Esfandiari BSc
+    affiliation:
+      - ref: ubc
+  - name: Chris Carlsten MD MPH
+    affiliation:
+      - name: Division of Respiratory Medicine, Department of Medicine, University of British Columbia
+      - ref: legacy
+      
+  - name: Mohsen Sadatsafavi MD PhD
+    affiliation:
+      - ref: ubc
+abstract: >
+  **Importance:** Several professional medical societies have removed race and ethnicity from widely used clinical algorithms with implications for millions. Yet, patient and public opinions regarding the tensions underlying these pivotal changes have not been systematically explored.\
+
+  **Objective:**  To assess global public opinion on the use of race or ethnicity in clinical algorithms, including preferences for different approaches to algorithmic reform and perceptions of alternative predictors.\
+
+  **Design:** Cross-sectional survey study.\
+
+  **Setting:** Multinational opt-in online survey in January 2026.\
+
+  **Participants:** A volunteer convenience sample with quota sampling to achieve approximately equal participation by sex at birth and across ten categories of self-identified race and ethnicity.\
+
+  **Main Outcomes and Measures:** Self-reported comfort with demographic and social predictors in clinical calculators, with net comfort defined as percentage extremely or somewhat comfortable minus percentage extremely or somewhat uncomfortable; preferences for race-specific versus race-free algorithms; perceptions of algorithmic harm or benefit.\
+
+  **Results:** Of 1,050 responses, 994 (94.7%) met eligibility criteria. Participants resided in 43 countries with a median age of 32.0 years (IQR, 26-41). Net comfort with the use of race or ethnicity in a hypothetical cancer risk calculator was +62.4% (95% CI: +57.8% to +66.9%), compared with +14.5% (95% CI: +9.1% to +19.9%) for postal or ZIP code. Overall, 87.9% (95% CI: 85.9% to 90.0%) were comfortable with the use of race or ethnicity if a clinician explained its use, and only 12.8% agreed race and ethnicity should never be used clinically. Across spirometry, kidney function, and cardiovascular risk calculators, 40.0% to 47.6% preferred race-specific versions, whereas 16.7% to 28.2% preferred race-free alternatives. Furthermore, a substantial proportion disagreed that they were well-represented by race and ethnicity categories, ranging from 22.1% for osteoporotic fracture risk equations to 42.9% for cardiovascular risk equations. These findings were consistent across countries, self-identified race and ethnicity, and among participants reporting prior experiences of racism in healthcare.\
+  
+  **Conclusions and Relevance:** In our diverse multinational survey study, respondents were comfortable with the use of race and ethnicity across application areas, but often did not feel represented by existing categories and were less comfortable with alternatives based on postal or ZIP codes.
+
+bibliography: references.bib
+csl: jama.csl
+---
+
+```{r}
+#| label: setup
+#| message: false
+rm(list = ls())
+library(tidyverse)
+library(ggthemes)
+library(gtsummary)
+library(flextable)
+set_flextable_defaults(font.family = "Aptos", font.size = 9, padding.bottom = 0, padding.top = 0)
+
+set.seed(110)
+
+likert_levels <- c("Strongly disagree", "Somewhat disagree", "Neither agree nor disagree",
+                   "Somewhat agree", "Strongly agree")
+comfort_levels <- c("Extremely uncomfortable", "Somewhat uncomfortable",
+                    "Neither comfortable nor uncomfortable",
+                    "Somewhat comfortable", "Extremely comfortable")
+
+# Simplify reaction labels based on actual response text
+simplify_reaction <- function(x) {
+  case_when(
+    # Race-based preferences (various phrasings across algorithms)
+    str_detect(x, "takes my race or ethnicity into account") ~ "Prefer race-based",
+    str_detect(x, "race or ethnicity is considered") ~ "Prefer race-based",
+    # Race-free preferences
+    str_detect(x, "does not depend on race") ~ "Prefer race-free",
+    str_detect(x, "does not consider my race") ~ "Prefer race-free",
+    str_detect(x, "postal or zip code instead") ~ "Prefer postal-ZIP instead of race",
+    # Neutral
+    str_detect(x, regex("neutral|unsure", ignore_case = TRUE)) ~ "Neutral/Unsure",
+    # Other
+    str_detect(x, "self-describe") ~ "Other",
+    TRUE ~ NA_character_
+  )
+}
+```
+
+```{r}
+#| label: load-cleaned-data
+
+# Load the cleaned and merged responses from data-process.qmd
+responses <- read_rds("data/responses_cleaned.rds")
+
+age_group_levels <- c("15–24", "25–44", "45–59", "60–74", "75+")
+
+# Derive `Age group` from continuous `Age` when present (e.g. internal RDS);
+# the de-identified public CSV (see de-identify.R) already ships with this column.
+if (!"Age group" %in% names(responses) && "Age" %in% names(responses)) {
+  responses <- responses |>
+    mutate(`Age group` = factor(
+      case_when(
+        Age <= 24 ~ "15–24",
+        Age <= 44 ~ "25–44",
+        Age <= 59 ~ "45–59",
+        Age <= 74 ~ "60–74",
+        TRUE      ~ "75+"
+      ),
+      levels = age_group_levels
+    ))
+}
+```
+
+## Introduction
+
+Since 2019, there has been a movement to reconsider the use of race and ethnicity in clinical equations and algorithms [@Vyas2020; @Nkinsi2022]. As of April 2026, several professional societies have removed race as an explicit input from clinical algorithms used to estimate spirometry reference standards [@bhakta2023; @Bowerman2023], kidney function [@Delgado2022], cardiovascular risk for treating dyslipidemia and hypertension [@khan2024; @jones_2025; @Morris_2026], and risk of vaginal birth after caesarean [@the_american_college_of_obstetricians_and_gynecologists_practice_2021]. Other medical societies, including the International Osteoporosis Foundation and the Society of Thoracic Surgeons have resisted calls to remove race from their risk calculators, citing unacceptable accuracy loss [@macgillivray_impact_2023; @shahian_social_2022] particularly for minority groups in the US [@kanis_race-specific_2024].
+
+A critical gap in the debate over race or ethnicity in clinical algorithms has been the relative absence of global patient and public perspectives [@bhakta2023]. Patient and public opinion studies on this topic have focused on the US [@schmidt2023; @jain2023; @diao2026], even though some of these algorithms are deployed globally [@braun_breathing_2014]. The broader debate has also been largely US-centric [@chellappoo_race_2024; @doh_position_2025; @jaime_ethnic_2024].
+
+Here, we report a multinational survey on race or ethnicity and algorithmic reform in medicine, focusing on four guideline-referenced algorithms representing different reform approaches (@tbl-algorithms). Our sample was non-representative but diverse, recruited from opt-in online participants living in 43 countries across six continents, with quota-sampling to ensure equal participation by sex and ten self-identified categories of race and ethnicity.
+
+::: {#tbl-algorithms style="font-size: 0.75em;"}
+| Original Algorithm | Purpose | Race/Ethnicity Categories | Revised Algorithm | Reform | Professional Society | Ref. |
+|:----------|:----------|:----------|:----------|:----------|:----------|-----------|
+| 2009 CKD-EPI | Glomerular Filtration Rate (GFR) | Black, Non-Black | 2021 CKD-EPI | Refit without race | National Kidney Foundation, American Society of Nephrology | [@Delgado2022] |
+| GLI-2012 | Spirometry Reference Values | White, African American, Northeast Asian, Southeast Asian, Other | GLI-Global 2022 | Race-averaged | American Thoracic Society, European Respiratory Society | [@bhakta2023; @Bowerman2023] |
+| Pooled Cohort Equations | 10-year risk for total cardiovascular disease | White, African American, Other^1^ | PREVENT | Replaced race with optional ZIP code | American Heart Association | [@khan2024; @jones_2025; @Morris_2026] |
+| FRAX | 10-year risk of bone fracture | Brunei: Chinese; Malaysia: Bumiputera, Chinese, Indian; Singapore: Chinese, Indian, Malay; South Africa: African, Coloured, Indian, White; USA: Asian, Black, White, Hispanic; All other countries: single model, not ethnicity-specific^2^ | -- | -- | International Osteoporosis Foundation | [@kanis_race-specific_2024] |
+
+: Overview of Clinical Algorithms Included in the Survey
+:::
+
+^1^ The "other" category exists in pooled cohort web calculator but not in the underlying statistical model. In the web app, it uses the "White" value alongside a warning that the results might under- or overestimate risk for certain population groups.
+
+^2^ Ethnicity sub-categories are shown per FRAX v1.4.8.
+
+
+## Methods
+
+### Questionnaire Design
+
+The questionnaire was iteratively drafted with feedback from six graduate students (epidemiology, health outcomes, clinical prediction modelling) and three faculty members (medicine, clinical prediction, algorithmic fairness), then revised further after pretesting via cognitive interviews with two patient partners. The exact wording of the questionnaire is in the appendix.
+
+After a plain-language explainer about clinical calculators, the questionnaire presented four calculators reflecting different reform approaches in randomized order: refitting without race (eGFR), race‑averaged reference values (spirometry), replacing race with an area‑based deprivation score from postal codes (PREVENT), and retaining race or ethnicity (FRAX). For each, we asked whether participants felt represented by its categories, whether using race or ethnicity could improve their care, and whether they worried it might cause harm, using Likert‑scale items with randomized response direction. After all four sections, participants saw the race-free version (where available) and chose which they preferred.
+
+Comfort with different predictors was assessed via a hypothetical cancer risk calculator, with five-point ratings for: home postal or ZIP code, race or ethnicity, genetic ancestry, biological sex, country of origin, age, and environmental exposures.
+
+Participants were asked if they had ever felt being treated unfairly in the healthcare system because of their race or ethnicity, with an optional open-ended follow-up to describe their experience. A second item asked whether clinic staff had ever recorded their race or ethnicity without asking.
+
+Four replication items enabled comparison with prior representative US surveys, covering whether doctors should use race or ethnicity in clinical care, perceptions of bias in health and medicine, and expectations of care from racially or ethnically concordant providers [@diao2026].
+
+### Survey Recruitment
+
+We recruited participants through Prolific, with quota sampling for equal participation by biological sex at birth and ten self-identified ethnicity groups previously collected by Prolific. The survey was distributed over four waves at midnight and noon Pacific Time in January 2026. To expand geographical diversity, residents of countries exceeding 100 responses were excluded from subsequent waves. Participants consented at the beginning and end of the survey. Those who completed the study and passed authenticity checks were reimbursed at an average rate of £9.72/hour.
+
+### Demographics
+
+Self-identified data on age, sex, gender, ethnicity, countries of residence and birth, employment, and socioeconomic status were collected by Prolific prior to the survey. Prolific's ethnicity field required a single category; an additional survey item asked participants to select all population groups that applied (or self-describe), with options including African, African American, Caribbean, East Asian, Hispanic or Latina/Latino, Indigenous, Middle Eastern and North African, South Asian, Southeast Asian, and White (full wording in the appendix).
+
+### Analysis
+The study adhered to the AAPOR best practices. Open-ended responses were analyzed by conventional content analysis [@hsieh2005] in NVivo v1.7.2; non-English responses were translated via Google Translate and cross-checked with DeepL. Two reviewers independently developed a shared codebook through open coding of a subset of responses, then independently applied it to 10% of responses per question to ensure consistency. After discrepancies were resolved by consensus, the remaining responses were coded by one reviewer. Codes were grouped into broader categories by conceptual similarity, frequencies tallied, and representative quotes selected. Quantitative analyses were descriptive and unweighted, performed in Quarto v1.9.30 and R v4.5.2 with 95% confidence intervals from 2000 nonparametric bootstrap resamples.
+
+### Ethics Approval
+
+The study was approved by the Behavioural Research Ethics Board at the University of British Columbia (H25-02789).
+
+## Results
+
+Of 1,050 responses received, 48 participants revoked consent, 6 timed out, and 2 failed authenticity checks. The remaining 994 participants lived in 43 countries (@suppfig-top-country-residence), were born in 87 (@suppfig-top-country-birth), and had a median age of 32.0 years (IQR, 26-41). Among them, 500 (50.3%) were female and 494 (49.7%) were male by sex as recorded on legal/official documents. For the subset with gender identity data available, 50.1% identified as women, 48.4% as men, and 1.6% as non-binary. Overall, 53.1% worked full-time and 23.7% had a background in healthcare or health sciences (@tbl-1; characteristics stratified by ethnicity in @supptab-characteristics-by-ethnicity). Quantitative survey responses were largely complete, with no variable missing for more than 0.7% of participants.
+
+```{r}
+#| label: tbl-1
+#| tbl-cap: Characteristics of participants, based on demographics data collected by Prolific. Recruitment used quota sampling to obtain approximately equal numbers of participants across sex as recorded on legal/official documents and ten self-identified groups of race and ethnicity, based on single choice categories selected by participants when signing up. 
+
+north_america      <- c("Canada", "United States")
+europe             <- c("United Kingdom", "Poland", "Spain", "Italy", "Germany", "France",
+                        "Portugal", "Netherlands", "Greece", "Belgium", "Finland", "Sweden",
+                        "Czech Republic", "Denmark", "Ireland", "Luxembourg", "Austria",
+                        "Estonia", "Hungary", "Latvia", "Slovenia", "Romania", "Bulgaria",
+                        "Croatia", "Ukraine")
+africa             <- c("South Africa", "Kenya", "Egypt", "Morocco", "Nigeria", "Zimbabwe",
+                        "Cameroon", "Ghana", "Tunisia", "Mauritania", "Rwanda", "Somalia",
+                        "Sudan", "Zambia", "French Southern Territories")
+asia               <- c("India", "Korea", "Philippines", "Vietnam", "Malaysia", "Japan",
+                        "Indonesia", "Taiwan", "Saudi Arabia", "United Arab Emirates", "Israel",
+                        "China", "Iran", "Pakistan", "Hong Kong", "Turkey", "Lebanon",
+                        "Thailand", "Singapore", "Sri Lanka", "Syrian Arab Republic",
+                        "Afghanistan", "Jordan", "Kuwait", "Mongolia", "Nepal", "Qatar")
+latin_am_caribbean <- c("Chile", "Brazil", "Colombia", "Argentina", "Guyana",
+                        "Venezuela, Bolivarian Republic of",
+                        "Mexico", "Costa Rica", "Panama",
+                        "Jamaica", "Trinidad and Tobago", "Cuba", "Dominican Republic",
+                        "Haiti", "Aruba", "Curacao", "Grenada", "Montserrat", "Puerto Rico",
+                        "Saint Lucia", "Saint Vincent and the Grenadines")
+oceania            <- c("Australia", "New Zealand")
+region_levels      <- c("Northern America", "Europe", "Africa", "Asia",
+                        "Latin America and the Caribbean", "Oceania")
+
+table1 <- responses |>
+    select(`Age group`, `Employment status`, Gender, `Socioeconomic status`, Ethnicity,
+           Sex, `Country of residence`, `Country of birth`) |>
+    mutate(`Socioeconomic status` = as.numeric(`Socioeconomic status`),
+           across(c(Gender, `Employment status`), \(x) str_remove(x, "\\s*\\(.*\\)")),
+           Gender = factor(
+             if_else(is.na(Gender) | Gender == "Rather not say",
+                     "Rather not say / Unknown", Gender),
+             levels = c("Woman", "Man", "Non-binary", "Rather not say / Unknown")
+           ),
+           `Employment status` = factor(`Employment status`,
+             levels = c("Full-Time", "Part-Time", "Not in paid work", "Unemployed",
+                        "Due to start a new job within the next month", "Other")) |>
+             forcats::fct_na_value_to_level("Unknown"),
+           `Region of residence` = factor(
+             case_when(
+               `Country of residence` %in% north_america      ~ "Northern America",
+               `Country of residence` %in% europe             ~ "Europe",
+               `Country of residence` %in% africa             ~ "Africa",
+               `Country of residence` %in% asia               ~ "Asia",
+               `Country of residence` %in% latin_am_caribbean ~ "Latin America and the Caribbean",
+               `Country of residence` %in% oceania            ~ "Oceania"
+             ),
+             levels = region_levels
+           ),
+           `Region of birth` = factor(
+             case_when(
+               `Country of birth` %in% north_america      ~ "Northern America",
+               `Country of birth` %in% europe             ~ "Europe",
+               `Country of birth` %in% africa             ~ "Africa",
+               `Country of birth` %in% asia               ~ "Asia",
+               `Country of birth` %in% latin_am_caribbean ~ "Latin America and the Caribbean",
+               `Country of birth` %in% oceania            ~ "Oceania"
+             ),
+             levels = region_levels
+           )) |>
+    select(-`Country of residence`, -`Country of birth`, -`Region of birth`) |>
+    relocate(Gender, .before = `Employment status`) |>
+    relocate(Sex, .before = Gender) |>
+    relocate(`Employment status`, `Socioeconomic status`, .after = last_col())
+
+list("tbl_summary-fn:percent_fun" = label_style_number(scale = 100, digits = 1)) |>
+  set_gtsummary_theme()
+
+table1 |>
+    tbl_summary(missing = "ifany",
+                missing_text = "Unknown",
+                missing_stat = "{N_miss} ({p_miss}%)",
+                label = list(`Age group` ~ "Age group, years"),
+                digits = list(all_continuous() ~ 1, all_categorical() ~ c(0, 1))) |>
+    modify_footnote_body(
+    footnote = "Sex as recorded on legal/official documents",
+    columns = "label",
+    rows = variable == "Sex" & row_type == "label"
+  ) |>
+    modify_footnote_body(
+    footnote = "Participants were asked the following question: Where would you put yourself on the socioeconomic ladder? Choose between 1 to 10.",
+    columns = "label",
+    rows = variable == "Socioeconomic status" & row_type == "label"
+  ) |>
+    modify_footnote_body(
+    footnote = "Regions classified according to the United Nations M49 standard (https://unstats.un.org/unsd/methodology/m49/).",
+    columns = "label",
+    rows = variable == "Region of residence" & row_type == "label"
+  ) |>
+    as_flex_table()
+
+```
+
+### Perceptions of Race and Ethnicity
+
+Participants were asked to describe what "race or ethnicity" meant to them. Of 993 substantive responses analyzed, three (Portuguese, Polish, Spanish) were translated before non-mutually exclusive coding. Many defined race and ethnicity in terms of physical traits and skin colour (37.3%), place of origin (26.8%), ancestry (22.8%), and genetics (17.0%), while fewer described them as social constructs (2.9%). About 12.4% explicitly defined race and ethnicity as distinct concepts—the former relating to visible physical characteristics and the latter relating to cultural background or upbringing. Some (7.0%) described race and ethnicity as central to their identity, providing togetherness, belonging, and pride. A small subset (4.5%) noted perceived differences in disease risk across racial or ethnic groups. The codebook (@supptab-codebook-race), code frequencies (@supptab-codebook-freq), and example responses are in the Appendix.
+
+### Comfort Level for Different Predictors
+
+```{r}
+#| label: calc-net-comfort-stats
+#| output: false
+
+comfort_pos <- c("Somewhat comfortable", "Extremely comfortable")
+comfort_neg <- c("Somewhat uncomfortable", "Extremely uncomfortable")
+
+net_comfort <- function(x) {
+  x <- x[!is.na(x)]
+  (mean(x %in% comfort_pos) - mean(x %in% comfort_neg)) * 100
+}
+
+boot_ci_net <- function(x, R = 2000) {
+  x <- x[!is.na(x)]
+  reps <- replicate(R, {
+    s <- sample(x, length(x), replace = TRUE)
+    (mean(s %in% comfort_pos) - mean(s %in% comfort_neg)) * 100
+  })
+  quantile(reps, c(0.025, 0.975), names = FALSE)
+}
+
+fmt_ci_signed       <- function(p, ci) sprintf("%+.1f%% (95%% CI: %+.1f to %+.1f)", p, ci[1], ci[2])
+fmt_ci_signed_inner <- function(p, ci) sprintf("%+.1f%%, 95%% CI: %+.1f to %+.1f",   p, ci[1], ci[2])
+
+# Per-factor net comfort + 95% CI
+nc_age      <- net_comfort(responses[["fd-factors_1"]]); ci_nc_age      <- boot_ci_net(responses[["fd-factors_1"]])
+nc_sex      <- net_comfort(responses[["fd-factors_2"]]); ci_nc_sex      <- boot_ci_net(responses[["fd-factors_2"]])
+nc_race     <- net_comfort(responses[["fd-factors_3"]]); ci_nc_race     <- boot_ci_net(responses[["fd-factors_3"]])
+nc_zip      <- net_comfort(responses[["fd-factors_4"]]); ci_nc_zip      <- boot_ci_net(responses[["fd-factors_4"]])
+nc_env      <- net_comfort(responses[["fd-factors_5"]]); ci_nc_env      <- boot_ci_net(responses[["fd-factors_5"]])
+nc_ancestry <- net_comfort(responses[["fd-factors_6"]]); ci_nc_ancestry <- boot_ci_net(responses[["fd-factors_6"]])
+nc_country  <- net_comfort(responses[["fd-factors_7"]]); ci_nc_country  <- boot_ci_net(responses[["fd-factors_7"]])
+
+pct_comfort <- function(x) {
+  x <- x[!is.na(x)]
+  mean(x %in% comfort_pos) * 100
+}
+boot_ci_pct_comfort <- function(x, R = 2000) {
+  x <- x[!is.na(x)]
+  reps <- replicate(R, mean(sample(x, length(x), replace = TRUE) %in% comfort_pos) * 100)
+  quantile(reps, c(0.025, 0.975), names = FALSE)
+}
+pct_race_comfort <- pct_comfort(responses[["fd-factors_3"]])
+ci_pct_race_comfort <- boot_ci_pct_comfort(responses[["fd-factors_3"]])
+
+# Per-ethnicity net comfort (multi-select expansion)
+eth_patterns <- c(
+  "African"          = "African \\(",
+  "East Asian"       = "East Asian",
+  "Hispanic/Latino"  = "Hispanic",
+  "South Asian"      = "(?<!east )South Asian"
+)
+
+eth_long <- responses |>
+  filter(!is.na(`demo-ethnicity`)) |>
+  rowwise() |>
+  mutate(eth_list = list(names(eth_patterns)[
+    sapply(eth_patterns, \(pat) str_detect(`demo-ethnicity`, pat))
+  ])) |>
+  ungroup() |>
+  unnest(eth_list)
+
+nc_eth <- function(eth, var) {
+  v <- eth_long[[var]][eth_long$eth_list == eth]
+  list(pct = net_comfort(v), ci = boot_ci_net(v))
+}
+
+nc_race_african    <- nc_eth("African",         "fd-factors_3")
+nc_race_eastasian  <- nc_eth("East Asian",      "fd-factors_3")
+nc_zip_hispanic    <- nc_eth("Hispanic/Latino", "fd-factors_4")
+nc_zip_southasian  <- nc_eth("South Asian",     "fd-factors_4")
+```
+
+Respondents rated their comfort with a hypothetical cancer risk calculator using various inputs. We define net comfort as the percentage extremely or somewhat comfortable minus the percentage extremely or somewhat uncomfortable. Most were comfortable with age (net comfort `r fmt_ci_signed_inner(nc_age, ci_nc_age)`), biological sex (`r fmt_ci_signed_inner(nc_sex, ci_nc_sex)`), environmental exposures (`r fmt_ci_signed_inner(nc_env, ci_nc_env)`), and genetic ancestry (`r fmt_ci_signed_inner(nc_ancestry, ci_nc_ancestry)`). Comfort declined for country of origin (`r fmt_ci_signed_inner(nc_country, ci_nc_country)`) and race and ethnicity (`r fmt_ci_signed_inner(nc_race, ci_nc_race)`), and much lower for ZIP or postal code (`r fmt_ci_signed_inner(nc_zip, ci_nc_zip)`; @fig-comfort-factor).
+
+Comfort varied across participants (@suppfig-ethnicity-self-comfort-factor, @suppfig-ethnicity-comfort-factor): net comfort with race and ethnicity ranged from `r fmt_ci_signed(nc_race_african$pct, nc_race_african$ci)` among Africans to `r fmt_ci_signed(nc_race_eastasian$pct, nc_race_eastasian$ci)` among East Asians, and for ZIP or postal code from `r fmt_ci_signed(nc_zip_hispanic$pct, nc_zip_hispanic$ci)` among Hispanic/Latino to `r fmt_ci_signed(nc_zip_southasian$pct, nc_zip_southasian$ci)` among South Asians. Among countries with ≥20 respondents, net comfort remained positive for race and ethnicity, but was sometimes negative for ZIP or postal code (@suppfig-country-comfort-factor).
+
+```{r}
+#| label: calc-never-use-stats
+#| output: false
+
+# rep-diao_1: comfortable if doctor believes it is best for care
+# rep-diao_2: comfortable if doctor discusses how and why it is used
+# rep-diao_3: comfortable if recommended by practice guidelines
+# rep-diao_4: doctors should never use race or ethnicity (agree = oppose use)
+
+calc_pct_agree <- function(col) {
+  x <- responses[[col]]
+  x <- x[!is.na(x)]
+  sum(x %in% c("Somewhat agree", "Strongly agree")) / length(x) * 100
+}
+
+# Percentile bootstrap 95% CI for a proportion (returned as %)
+boot_ci_agree <- function(x, R = 2000) {
+  x <- x[!is.na(x)]
+  reps <- replicate(R, {
+    s <- sample(x, length(x), replace = TRUE)
+    mean(s %in% c("Somewhat agree", "Strongly agree")) * 100
+  })
+  quantile(reps, c(0.025, 0.975), names = FALSE)
+}
+
+ci_discussed  <- boot_ci_agree(responses[["rep-diao_2"]])
+ci_guidelines <- boot_ci_agree(responses[["rep-diao_3"]])
+ci_best_care  <- boot_ci_agree(responses[["rep-diao_1"]])
+ci_never_use  <- boot_ci_agree(responses[["rep-diao_4"]])
+
+pct_discussed    <- calc_pct_agree("rep-diao_2")  # 88%
+pct_guidelines   <- calc_pct_agree("rep-diao_3")  # 80%
+pct_best_care    <- calc_pct_agree("rep-diao_1")  # 79%
+pct_never_use    <- calc_pct_agree("rep-diao_4")  # 13%
+
+fmt_ci <- function(p, ci) sprintf("%.1f%% (95%% CI: %.1f–%.1f)", p, ci[1], ci[2])
+fmt_ci_inner <- function(p, ci) sprintf("%.1f%%, 95%% CI: %.1f–%.1f", p, ci[1], ci[2])
+
+# ethnicity_categories is defined later in the document; redefined here for early use
+ethnicity_categories_early <- c(
+  "African" = "African \\(",
+  "African American" = "African American",
+  "Caribbean" = "Caribbean",
+  "East Asian" = "East Asian",
+  "Hispanic/Latino" = "Hispanic",
+  "Indigenous" = "Indigenous",
+  "Middle Eastern" = "Middle Eastern",
+  "Mixed" = "Mixed",
+  "South Asian" = "South Asian",
+  "Southeast Asian" = "Southeast Asian",
+  "White" = "White"
+)
+
+# Never-use by self-reported ethnicity (with bootstrap 95% CI per group)
+never_use_long <- responses |>
+  filter(!is.na(`demo-ethnicity`), !is.na(`rep-diao_4`)) |>
+  rowwise() |>
+  mutate(eth_list = list(names(ethnicity_categories_early)[
+    sapply(ethnicity_categories_early, \(pat) str_detect(`demo-ethnicity`, pat))
+  ])) |>
+  ungroup() |>
+  unnest(eth_list)
+
+never_use_by_self_eth <- never_use_long |>
+  group_by(eth_list) |>
+  summarise(pct_agree = mean(`rep-diao_4` %in% c("Somewhat agree", "Strongly agree")) * 100,
+            .groups = "drop")
+
+ci_never_white <- boot_ci_agree(
+  never_use_long$`rep-diao_4`[never_use_long$eth_list == "White"]
+)
+ci_never_aa <- boot_ci_agree(
+  never_use_long$`rep-diao_4`[never_use_long$eth_list == "African American"]
+)
+
+pct_never_white <- never_use_by_self_eth$pct_agree[never_use_by_self_eth$eth_list == "White"]
+pct_never_aa    <- never_use_by_self_eth$pct_agree[never_use_by_self_eth$eth_list == "African American"]
+```
+
+Overall, `r fmt_ci(pct_discussed, ci_discussed)` were comfortable with race or ethnicity in clinical algorithms if the doctor explained why and how it was used, `r fmt_ci(pct_guidelines, ci_guidelines)` if recommended by guidelines, and `r fmt_ci(pct_best_care, ci_best_care)` if the doctor believed it best for care. Only `r fmt_ci(pct_never_use, ci_never_use)` agreed that doctors should never use race or ethnicity, ranging from `r fmt_ci(pct_never_white, ci_never_white)` among White respondents to `r fmt_ci(pct_never_aa, ci_never_aa)` among African Americans (@suppfig-never-use-by-ethnicity).
+
+```{r}
+#| label: calc-told-howoften-stats
+#| output: false
+
+# Percentile bootstrap 95% CI for proportion of x matching `targets` (returned as %)
+boot_ci_match <- function(x, targets, R = 2000) {
+  x <- x[!is.na(x)]
+  reps <- replicate(R, {
+    s <- sample(x, length(x), replace = TRUE)
+    mean(s %in% targets) * 100
+  })
+  quantile(reps, c(0.025, 0.975), names = FALSE)
+}
+
+pct_match <- function(x, targets) {
+  x <- x[!is.na(x)]
+  mean(x %in% targets) * 100
+}
+
+told_x   <- responses[["told-race-used"]]
+pct_told <- pct_match(told_x, "Yes")
+ci_told  <- boot_ci_match(told_x, "Yes")
+
+how_x <- responses[["rep-how-often"]]
+pct_always    <- pct_match(how_x, "Always")
+pct_most      <- pct_match(how_x, "Most of the time")
+pct_half      <- pct_match(how_x, "About half the time")
+pct_sometimes <- pct_match(how_x, "Sometimes")
+pct_never_ho  <- pct_match(how_x, "Never")
+
+ci_always    <- boot_ci_match(how_x, "Always")
+ci_most      <- boot_ci_match(how_x, "Most of the time")
+ci_half      <- boot_ci_match(how_x, "About half the time")
+ci_sometimes <- boot_ci_match(how_x, "Sometimes")
+ci_never_ho  <- boot_ci_match(how_x, "Never")
+```
+
+About `r fmt_ci(pct_told, ci_told)` recalled a clinician telling them their race or ethnicity played a role in a medical decision. When asked how often they are asked for race or ethnicity in healthcare settings, `r fmt_ci(pct_always, ci_always)` said always, `r fmt_ci(pct_most, ci_most)` most of the time, `r fmt_ci(pct_half, ci_half)` about half, `r fmt_ci(pct_sometimes, ci_sometimes)` sometimes, and `r fmt_ci(pct_never_ho, ci_never_ho)` never. Participants from the UK, US, and South Africa, and those self-identifying as Indigenous, African, Caribbean, or African American were more likely to report being routinely asked (@suppfig-how-often-by-country, @suppfig-how-often-by-ethnicity).
+
+```{r}
+#| label: fig-comfort-factor
+#| fig-width: 9
+#| fig-height: 5
+#| fig-cap: "Respondent comfort levels with the use of each demographic and clinical factor in a hypothetical cancer risk calculator. Participants were asked: \"Imagine a doctor is using a clinical calculator to determine your risk for a type of cancer. How comfortable are you with the calculator using each of the following pieces of information?\" Bars extend rightward for comfortable responses (light and dark blue) and leftward for uncomfortable responses (light and dark red), with neutral responses (grey) centred at zero. Factors are ordered by net comfort (total percentage extremely or somewhat comfortable minus total percentage extremely or somewhat uncomfortable)."
+
+factor_vars <- c("fd-factors_1", "fd-factors_2", "fd-factors_3",
+                 "fd-factors_4", "fd-factors_5", "fd-factors_6", "fd-factors_7")
+factor_labels <- c("Age", "Biological sex", "Race/ethnicity",
+                   "ZIP or Postal Code", "Environmental exposures", "Genetic ancestry", "Country of origin")
+
+comfort_levels <- c("Extremely uncomfortable", "Somewhat uncomfortable",
+                     "Neither comfortable nor uncomfortable",
+                     "Somewhat comfortable", "Extremely comfortable")
+
+comfort_df <- responses |>
+  select(all_of(factor_vars)) |>
+  setNames(factor_labels) |>
+  pivot_longer(everything(), names_to = "factor", values_to = "comfort") |>
+  filter(!is.na(comfort)) |>
+  mutate(comfort = factor(comfort, levels = comfort_levels))
+
+# Percentages per factor-level combination
+comfort_summary <- comfort_df |>
+  count(factor, comfort) |>
+  group_by(factor) |>
+  mutate(pct = n / sum(n) * 100) |>
+  ungroup()
+
+# Order factors by net comfort
+factor_order <- comfort_summary |>
+  mutate(side = case_when(
+    comfort %in% c("Somewhat comfortable", "Extremely comfortable") ~ "pos",
+    comfort %in% c("Somewhat uncomfortable", "Extremely uncomfortable") ~ "neg",
+    TRUE ~ "neutral"
+  )) |>
+  group_by(factor) |>
+  summarise(
+    net = sum(pct[side == "pos"]) - sum(pct[side == "neg"]),
+    .groups = "drop"
+  ) |>
+  arrange(net) |>
+  pull(factor)
+
+# Build diverging positions: uncomfortable goes left, neutral centred, comfortable goes right
+comfort_plot <- comfort_summary |>
+  mutate(factor = factor(factor, levels = factor_order)) |>
+  group_by(factor) |>
+  mutate(
+    # Half of neutral straddles zero
+    neutral_pct = pct[comfort == "Neither comfortable nor uncomfortable"],
+    # Cumulative negative side (extremely uncomf, then somewhat uncomf, then half neutral)
+    xmin = case_when(
+      comfort == "Extremely uncomfortable" ~
+        -(pct[comfort == "Extremely uncomfortable"] +
+          pct[comfort == "Somewhat uncomfortable"] +
+          neutral_pct / 2),
+      comfort == "Somewhat uncomfortable" ~
+        -(pct[comfort == "Somewhat uncomfortable"] +
+          neutral_pct / 2),
+      comfort == "Neither comfortable nor uncomfortable" ~
+        -(neutral_pct / 2),
+      comfort == "Somewhat comfortable" ~
+        neutral_pct / 2,
+      comfort == "Extremely comfortable" ~
+        neutral_pct / 2 + pct[comfort == "Somewhat comfortable"]
+    ),
+    xmax = xmin + pct
+  ) |>
+  ungroup()
+
+# Net comfort labels
+net_labels <- comfort_plot |>
+  group_by(factor) |>
+  summarise(
+    net = sum(pct[comfort %in% c("Somewhat comfortable", "Extremely comfortable")]) -
+          sum(pct[comfort %in% c("Somewhat uncomfortable", "Extremely uncomfortable")]),
+    x_end = max(xmax),
+    .groups = "drop"
+  )
+
+ggplot(comfort_plot, aes(y = factor, xmin = xmin, xmax = xmax, fill = comfort)) +
+  geom_rect(aes(ymin = as.numeric(factor) - 0.35,
+                ymax = as.numeric(factor) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = factor,
+                label = ifelse(abs(xmax - xmin) > 6, sprintf("%.1f%%", pct), "")),
+            size = 3) +
+  geom_text(data = net_labels,
+            aes(x = x_end + 2, y = factor, label = sprintf("%+.1f%%", net)),
+            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+  geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
+  scale_fill_manual(
+    values = c(
+      "Extremely uncomfortable" = "#d73027",
+      "Somewhat uncomfortable"  = "#fc8d59",
+      "Neither comfortable nor uncomfortable" = "#cccccc",
+      "Somewhat comfortable"    = "#91bfdb",
+      "Extremely comfortable"   = "#4575b4"
+    ),
+    name = NULL,
+    breaks = comfort_levels
+  ) +
+  scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
+                     expand = expansion(mult = c(0.05, 0.12))) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8))
+```
+
+### Algorithmic Reform
+
+```{r}
+#| label: race_how_often
+#| output: false
+
+# question: When you are seeking healthcare, how often are you asked what race or ethnicity group you belong to (either by the doctor or on a form)?
+responses |>
+   filter(!is.na(`rep-how-often`)) |>
+   count(`rep-how-often`) |>
+   mutate(pct = round(n / sum(n) * 100, 2))
+
+# question: Have you ever had the experience of noticing that a doctor, nurse, or clinic staff have filled out your race or ethnicity on a form or computer screen without asking you?
+responses |>
+   filter(!is.na(`rep-misclassify`)) |>
+   count(`rep-misclassify`) |>
+   mutate(pct = round(n / sum(n) * 100, 2))
+
+```
+
+```{r}
+#| label: calc-misclassify-stats
+#| output: false
+
+mis_x <- responses[["rep-misclassify"]]
+yes_any <- c("Yes, and it did not match my own choice",
+             "Yes, and it matched my own choice")
+mismatch <- "Yes, and it did not match my own choice"
+
+pct_filled_without_asking <- pct_match(mis_x, yes_any)
+ci_filled_without_asking  <- boot_ci_match(mis_x, yes_any)
+
+pct_misidentified <- pct_match(mis_x, mismatch)
+ci_misidentified  <- boot_ci_match(mis_x, mismatch)
+```
+
+About `r fmt_ci(pct_filled_without_asking, ci_filled_without_asking)` reported staff filling out their race or ethnicity without asking them to self-identify; about a quarter of those (`r fmt_ci(pct_misidentified, ci_misidentified)` of total) experienced misidentification. This was most common in Kenya and South Africa (@suppfig-misclassify-by-country) and among Indigenous, African, African American, and Caribbean participants (@suppfig-misclassify-by-ethnicity).
+
+```{r}
+#| label: calc-represented-net-stats
+#| output: false
+
+likert_pos <- c("Somewhat agree", "Strongly agree")
+likert_neg <- c("Somewhat disagree", "Strongly disagree")
+
+net_agree <- function(x) {
+  x <- x[!is.na(x)]
+  (mean(x %in% likert_pos) - mean(x %in% likert_neg)) * 100
+}
+
+boot_ci_net_agree <- function(x, R = 2000) {
+  x <- x[!is.na(x)]
+  reps <- replicate(R, {
+    s <- sample(x, length(x), replace = TRUE)
+    (mean(s %in% likert_pos) - mean(s %in% likert_neg)) * 100
+  })
+  quantile(reps, c(0.025, 0.975), names = FALSE)
+}
+
+na_rep_pooled <- net_agree(responses[["cvd-questions_1"]])
+ci_rep_pooled <- boot_ci_net_agree(responses[["cvd-questions_1"]])
+na_rep_frax   <- net_agree(responses[["frax-questions_1"]])
+ci_rep_frax   <- boot_ci_net_agree(responses[["frax-questions_1"]])
+
+pct_agree_likert <- function(x) {
+  x <- x[!is.na(x)]
+  mean(x %in% likert_pos) * 100
+}
+helps_pcts <- sapply(
+  c("spiro-questions_3", "egfr-questions_3", "cvd-questions_3", "frax-questions_3"),
+  \(v) pct_agree_likert(responses[[v]])
+)
+helps_lo <- min(helps_pcts)
+helps_hi <- max(helps_pcts)
+```
+
+Across all four race-specific tools (@fig-reaction), a majority felt represented by the provided racial categories (44.8--64.8% agreement, net agreement from `r fmt_ci_signed_inner(na_rep_pooled, ci_rep_pooled)` for Pooled Cohort which had binary race categories to `r fmt_ci_signed_inner(na_rep_frax, ci_rep_frax)` for FRAX, which is country-specific and ethnicity-specific in certain countries) and believed incorporating race helped improve their care (55.5--58.0%, net +33.9% to +40.1%). Roughly half disagreed that using race or ethnicity could cause harm (net -21.2% to -28.5%).
+
+```{r}
+#| label: calc-revised-reaction-stats
+#| output: false
+
+spiro_react <- simplify_reaction(responses[["spiro-new-reaction"]])
+egfr_react  <- simplify_reaction(responses[["egfr-new-reaction"]])
+cvd_react   <- simplify_reaction(responses[["cvd-new-reaction"]])
+
+pct_spiro_rb  <- pct_match(spiro_react, "Prefer race-based")
+ci_spiro_rb   <- boot_ci_match(spiro_react, "Prefer race-based")
+pct_spiro_rf  <- pct_match(spiro_react, "Prefer race-free")
+ci_spiro_rf   <- boot_ci_match(spiro_react, "Prefer race-free")
+
+pct_egfr_rb   <- pct_match(egfr_react, "Prefer race-based")
+ci_egfr_rb    <- boot_ci_match(egfr_react, "Prefer race-based")
+pct_egfr_rf   <- pct_match(egfr_react, "Prefer race-free")
+ci_egfr_rf    <- boot_ci_match(egfr_react, "Prefer race-free")
+
+pct_cvd_rb    <- pct_match(cvd_react, "Prefer race-based")
+ci_cvd_rb     <- boot_ci_match(cvd_react, "Prefer race-based")
+pct_cvd_zip   <- pct_match(cvd_react, "Prefer postal-ZIP instead of race")
+ci_cvd_zip    <- boot_ci_match(cvd_react, "Prefer postal-ZIP instead of race")
+
+# Neutral/Unsure across the three algorithm pairs
+pct_neutral_vec <- c(
+  pct_match(spiro_react, "Neutral/Unsure"),
+  pct_match(egfr_react,  "Neutral/Unsure"),
+  pct_match(cvd_react,   "Neutral/Unsure")
+)
+neutral_lo <- min(pct_neutral_vec)
+neutral_hi <- max(pct_neutral_vec)
+
+# Race-based vs race-free (or postal-ZIP for PREVENT) preference ratios
+rb_alt_ratios <- c(
+  pct_spiro_rb / pct_spiro_rf,
+  pct_egfr_rb  / pct_egfr_rf,
+  pct_cvd_rb   / pct_cvd_zip
+)
+rb_ratio_lo <- min(rb_alt_ratios)
+rb_ratio_hi <- max(rb_alt_ratios)
+```
+
+Respondents did not uniformly embrace revised algorithms that no longer used race and ethnicity: `r fmt_ci(pct_spiro_rb, ci_spiro_rb)` and `r fmt_ci(pct_egfr_rb, ci_egfr_rb)` preferred the race-based versions of spirometry (GLI-2012) and eGFR (2009 CKD-EPI), versus `r fmt_ci(pct_spiro_rf, ci_spiro_rf)` and `r fmt_ci(pct_egfr_rf, ci_egfr_rf)` who favoured the revised replacements (@fig-reaction). For cardiovascular risk, `r fmt_ci(pct_cvd_rb, ci_cvd_rb)` preferred the race-based Pooled Cohort over `r fmt_ci(pct_cvd_zip, ci_cvd_zip)` who preferred PREVENT, which replaces race with optional ZIP code as a socioeconomic proxy. `r sprintf("%.1f--%.1f%%", neutral_lo, neutral_hi)` remained neutral or unsure across all three pairs.
+
+```{r}
+#| label: ai_concern
+#| output: false
+
+# question: Clinical algorithms can range from simple formulas to complex AI systems. Would your concerns about using race or ethnicity differ depending on the type of tool?
+responses |>
+   filter(!is.na(`fd-ai-concern`)) |>
+   count(`fd-ai-concern`) |>
+   mutate(pct = n / sum(n) * 100)
+
+```
+
+```{r}
+#| label: calc-ai-concern-stats
+#| output: false
+
+ai_x <- responses[["fd-ai-concern"]]
+ai_none   <- "I'm not concerned about race or ethnicity being used in any tools."
+ai_equal  <- "I would be equally concerned regardless the type of tool."
+ai_more   <- "I would be more concerned about race or ethnicity in AI systems than in simple formulas."
+ai_less   <- "I would be less concerned about race or ethnicity in AI systems than in simple formulas."
+
+pct_ai_none  <- pct_match(ai_x, ai_none);  ci_ai_none  <- boot_ci_match(ai_x, ai_none)
+pct_ai_equal <- pct_match(ai_x, ai_equal); ci_ai_equal <- boot_ci_match(ai_x, ai_equal)
+pct_ai_more  <- pct_match(ai_x, ai_more);  ci_ai_more  <- boot_ci_match(ai_x, ai_more)
+pct_ai_less  <- pct_match(ai_x, ai_less);  ci_ai_less  <- boot_ci_match(ai_x, ai_less)
+```
+
+When asked how concerns about race or ethnicity differed between AI systems and simpler formula-based tools, opinions were divided: the largest group (`r fmt_ci_inner(pct_ai_none, ci_ai_none)`) expressed no concern about any tool and a similar proportion (`r fmt_ci_inner(pct_ai_equal, ci_ai_equal)`) were equally concerned regardless of type. Among those who differentiated, nearly three times as many were more concerned about AI (`r fmt_ci_inner(pct_ai_more, ci_ai_more)`) than less concerned (`r fmt_ci_inner(pct_ai_less, ci_ai_less)`).
+
+```{r}
+#| label: calc-stakeholder-input
+#| output: false
+
+# fd-stakeholder is a comma-separated multi-select field
+stakeholder_n <- sum(!is.na(responses[["fd-stakeholder"]]))
+
+pct_stakeholder <- function(label) {
+  sum(str_detect(responses[["fd-stakeholder"]], fixed(label)), na.rm = TRUE) /
+    stakeholder_n * 100
+}
+
+boot_ci_stakeholder <- function(label, R = 2000) {
+  vec <- responses[["fd-stakeholder"]]
+  vec <- vec[!is.na(vec)]
+  hits <- str_detect(vec, fixed(label))
+  reps <- replicate(R, mean(sample(hits, length(hits), replace = TRUE)) * 100)
+  quantile(reps, c(0.025, 0.975), names = FALSE)
+}
+
+pct_sk_research  <- pct_stakeholder("Medical researchers and scientists")
+ci_sk_research   <- boot_ci_stakeholder("Medical researchers and scientists")
+pct_sk_provider  <- pct_stakeholder("Doctors and healthcare providers")
+ci_sk_provider   <- boot_ci_stakeholder("Doctors and healthcare providers")
+pct_sk_patient   <- pct_stakeholder("Individual patients (for decisions about their own care)")
+ci_sk_patient    <- boot_ci_stakeholder("Individual patients (for decisions about their own care)")
+pct_sk_govt      <- pct_stakeholder("Government or public health agencies")
+ci_sk_govt       <- boot_ci_stakeholder("Government or public health agencies")
+pct_sk_advocacy  <- pct_stakeholder("Patient advocacy groups or organizations")
+ci_sk_advocacy   <- boot_ci_stakeholder("Patient advocacy groups or organizations")
+pct_sk_public    <- pct_stakeholder("The general public")
+ci_sk_public     <- boot_ci_stakeholder("The general public")
+```
+
+When asked who should have input on race or ethnicity in clinical calculators, `r fmt_ci(pct_sk_research, ci_sk_research)` said medical researchers, `r fmt_ci(pct_sk_provider, ci_sk_provider)` healthcare providers, `r fmt_ci(pct_sk_patient, ci_sk_patient)` individual patients for their own care, `r fmt_ci(pct_sk_govt, ci_sk_govt)` government or public health agencies, `r fmt_ci(pct_sk_advocacy, ci_sk_advocacy)` patient advocacy groups, and `r fmt_ci(pct_sk_public, ci_sk_public)` general public.
+
+```{r}
+#| label: fig-reaction
+#| fig-width: 10
+#| fig-height: 8
+#| fig-cap: "Respondent reactions to race-specific algorithms and preferences for their revised counterparts. The upper three panels show agreement with three statements per algorithm (5-point Likert scale): *Represented* ('I feel represented by the race or ethnicity categories used to [interpret lung function test results / estimate kidney function / estimate heart disease risk / estimate bone fracture risk]'); *Worry harm* ('I worry that using my race or ethnicity in [spirometry / kidney function tests / heart disease risk calculators / the FRAX calculator] to support clinical decisions might harm me'); and *Helps care* ('I believe that using race or ethnicity in [spirometry / kidney function estimation / heart disease risk calculator / the FRAX calculator] could help ensure better care for me'). The lower panel shows preference for the revised race-free version over the race-specific original, among the three algorithms with a revised counterpart; FRAX has no revised version. 'Prefer to self-describe' responses are included in Neutral/Unsure. For all panels, bars extend rightward for agreement or preference for the revised version (blue) and leftward for disagreement or preference for the race-based version (red), with neutral responses (yellow) centred at zero. Net agreement, or net preference for the revised version, is shown to the right of each bar."
+
+algo_levels    <- c("GLI-2012", "2009 CKD-EPI", "2013 ASCVD", "FRAX")
+all_dim_levels <- c("Represented", "Worry harm", "Helps care",
+                    "Preference for revised version")
+
+# ---- Likert data ----
+likert_vars <- c(
+  "spiro-questions_1", "spiro-questions_2", "spiro-questions_3",
+  "egfr-questions_1", "egfr-questions_2", "egfr-questions_3",
+  "cvd-questions_1", "cvd-questions_2", "cvd-questions_3",
+  "frax-questions_1", "frax-questions_2", "frax-questions_3"
+)
+
+likert_df <- responses |>
+  select(all_of(likert_vars)) |>
+  setNames(c(
+    "GLI-2012: Represented", "GLI-2012: Worry harm", "GLI-2012: Helps care",
+    "2009 CKD-EPI: Represented", "2009 CKD-EPI: Worry harm", "2009 CKD-EPI: Helps care",
+    "2013 ASCVD: Represented", "2013 ASCVD: Worry harm", "2013 ASCVD: Helps care",
+    "FRAX: Represented", "FRAX: Worry harm", "FRAX: Helps care"
+  )) |>
+  pivot_longer(everything(), names_to = "question", values_to = "response") |>
+  filter(!is.na(response)) |>
+  mutate(
+    algorithm = str_extract(question, "^[^:]+"),
+    dimension = str_extract(question, "(?<=: ).+"),
+    response  = factor(response, levels = likert_levels)
+  )
+
+likert_full <- likert_df |>
+  count(algorithm, dimension, response) |>
+  group_by(algorithm, dimension) |>
+  mutate(pct = n / sum(n) * 100) |>
+  ungroup() |>
+  mutate(
+    response_num = as.numeric(response),
+    dimension    = factor(dimension, levels = c("Represented", "Worry harm", "Helps care"))
+  )
+
+likert_diverging <- likert_full |>
+  group_by(algorithm, dimension) |>
+  mutate(
+    neutral_pct = pct[response_num == 3],
+    xmin = case_when(
+      response_num == 1 ~ -(pct[response_num == 2] + pct[response_num == 1] + neutral_pct / 2),
+      response_num == 2 ~ -(pct[response_num == 2] + neutral_pct / 2),
+      response_num == 3 ~ -neutral_pct / 2,
+      response_num == 4 ~ neutral_pct / 2,
+      response_num == 5 ~ pct[response_num == 4] + neutral_pct / 2
+    ),
+    xmax = case_when(
+      response_num == 1 ~ -(pct[response_num == 2] + neutral_pct / 2),
+      response_num == 2 ~ -neutral_pct / 2,
+      response_num == 3 ~ neutral_pct / 2,
+      response_num == 4 ~ pct[response_num == 4] + neutral_pct / 2,
+      response_num == 5 ~ pct[response_num == 4] + pct[response_num == 5] + neutral_pct / 2
+    )
+  ) |>
+  ungroup() |>
+  mutate(
+    algorithm = factor(algorithm, levels = algo_levels),
+    dimension = factor(as.character(dimension), levels = all_dim_levels),
+    response  = as.character(response)
+  )
+
+# ---- Preference data (4th panel) ----
+pref_algo_map <- c(
+  "spiro-new-reaction" = "GLI-2012",
+  "egfr-new-reaction"  = "2009 CKD-EPI",
+  "cvd-new-reaction"   = "2013 ASCVD"
+)
+
+pref_collapse <- c(
+  "Prefer race-based"                 = "Prefer race-based",
+  "Neutral/Unsure"                    = "Neutral/Unsure",
+  "Other"                             = "Neutral/Unsure",
+  "Prefer race-free"                  = "Prefer revised version",
+  "Prefer postal-ZIP instead of race" = "Prefer revised version"
+)
+
+pref_num <- c(
+  "Prefer race-based"      = 1L,
+  "Neutral/Unsure"         = 3L,
+  "Prefer revised version" = 5L
+)
+
+pref_full <- imap_dfr(pref_algo_map, function(algo, var) {
+  v    <- simplify_reaction(responses[[var]])
+  v    <- v[!is.na(v)]
+  resp <- pref_collapse[v]
+  tibble(algorithm = algo, response = resp[!is.na(resp)])
+}) |>
+  count(algorithm, response) |>
+  group_by(algorithm) |>
+  mutate(pct = n / sum(n) * 100) |>
+  ungroup() |>
+  mutate(
+    response_num = pref_num[response],
+    algorithm    = factor(algorithm, levels = algo_levels),
+    dimension    = factor("Preference for revised version", levels = all_dim_levels)
+  )
+
+pref_diverging <- pref_full |>
+  group_by(algorithm) |>
+  mutate(
+    neutral_pct = sum(pct[response_num == 3]),
+    xmin = case_when(
+      response_num == 1 ~ -(sum(pct[response_num == 1]) + neutral_pct / 2),
+      response_num == 3 ~ -neutral_pct / 2,
+      response_num == 4 ~ neutral_pct / 2,
+      response_num == 5 ~ sum(pct[response_num == 4]) + neutral_pct / 2
+    ),
+    xmax = case_when(
+      response_num == 1 ~ -neutral_pct / 2,
+      response_num == 3 ~ neutral_pct / 2,
+      response_num == 4 ~ sum(pct[response_num == 4]) + neutral_pct / 2,
+      response_num == 5 ~ sum(pct[response_num == 4]) + sum(pct[response_num == 5]) + neutral_pct / 2
+    )
+  ) |>
+  ungroup()
+
+# ---- Combine ----
+combined_diverging <- bind_rows(
+  likert_diverging |> select(algorithm, dimension, response, response_num, pct, xmin, xmax),
+  pref_diverging   |> select(algorithm, dimension, response, response_num, pct, xmin, xmax)
+) |>
+  mutate(
+    algorithm = factor(algorithm, levels = algo_levels),
+    dimension = factor(dimension, levels = all_dim_levels)
+  )
+
+net_labels_combined <- combined_diverging |>
+  group_by(algorithm, dimension) |>
+  summarise(
+    net   = sum(pct[response_num %in% c(4, 5)]) - sum(pct[response_num %in% c(1, 2)]),
+    x_end = max(xmax),
+    .groups = "drop"
+  )
+
+combined_hex <- c(
+  "Strongly disagree"          = "#d73027",
+  "Somewhat disagree"          = "#fc8d59",
+  "Neither agree nor disagree" = "#fee090",
+  "Somewhat agree"             = "#91bfdb",
+  "Strongly agree"             = "#4575b4",
+  "Prefer race-based"          = "#d73027",
+  "Neutral/Unsure"             = "#fee090",
+  "Prefer revised version"     = "#4575b4"
+)
+
+legend_breaks <- c(
+  "Strongly disagree", "Somewhat disagree", "Neither agree nor disagree",
+  "Somewhat agree", "Strongly agree"
+)
+
+pref_key <- tibble(
+  algorithm = factor("FRAX", levels = algo_levels),
+  dimension = factor("Preference for revised version", levels = all_dim_levels),
+  x         = c(-25, 0, 25),
+  label     = c("Prefer race-based", "Neutral / Unsure", "Prefer revised version"),
+  hex       = c("#d73027", "#8c7d2b", "#4575b4")
+)
+
+dimension_labels <- c(
+  "Represented"                  = "Felt represented by the race or ethnicity categories",
+  "Worry harm"                   = "Worried using race or ethnicity might harm them",
+  "Helps care"                   = "Believed using race or ethnicity helps ensure better care",
+  "Preference for revised version" = "Preferred the revised race-free version (FRAX: no revised version)"
+)
+
+ggplot(combined_diverging, aes(y = algorithm, xmin = xmin, xmax = xmax, fill = response)) +
+  geom_rect(aes(ymin = as.numeric(algorithm) - 0.4,
+                ymax = as.numeric(algorithm) + 0.4)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = algorithm,
+                label = ifelse(abs(xmax - xmin) > 6, sprintf("%.1f%%", pct), "")),
+            size = 3) +
+  geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
+  geom_text(data = net_labels_combined,
+            aes(x = x_end + 1, y = algorithm, label = sprintf("%+.1f%%", net)),
+            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+  geom_text(data = pref_key,
+            aes(x = x, y = algorithm, label = label, color = hex),
+            inherit.aes = FALSE, size = 3, fontface = "italic") +
+  facet_wrap(~ dimension, ncol = 1, labeller = labeller(dimension = dimension_labels)) +
+  scale_fill_manual(
+    values = combined_hex,
+    breaks = legend_breaks,
+    guide  = guide_legend(nrow = 1)
+  ) +
+  scale_color_identity() +
+  scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
+                     expand = expansion(mult = c(0.05, 0.15))) +
+  labs(x = "Percent", y = NULL, fill = NULL) +
+  theme_minimal() +
+  theme(legend.position = "top",
+        panel.grid.major.y = element_blank(),
+        strip.text = element_text(size = 11))
+```
+
+Among 215 substantive open-ended responses to other concerns, recurring themes were oversimplification of broad categories like "Black", "White", or "Hispanic" (7.0%) and risk of bias or discrimination grounded in historical misuse (11.2%). Many participants would accept race-specific tools conditionally if shown to improve accuracy or outcomes (8.8%) or on a case-by-case basis by disease indication (7.9%). Notably, 17.2% supported using race in clinical contexts, reasoning that it carries biological implications or serves as a proxy for environmental or lifestyle factors. A smaller subset (2.8%) expressed full trust in providers and researchers. The codebook (@supptab-codebook-reform), code frequencies (@supptab-codebook-freq), and example responses are in the appendix.
+
+```{r}
+#| include: false
+
+library(ggalluvial)
+library(patchwork)
+
+# Shared setup ---------------------------------------------------------------
+prolific_labels <- c(
+  "African" = "African",
+  "Black/African American" = "African American",
+  "Caribbean" = "Caribbean",
+  "East Asian" = "East Asian",
+  "Latino/Hispanic" = "Hispanic/Latino",
+  "Native American or Alaskan Native" = "Indigenous",
+  "Middle Eastern" = "Middle Eastern/N. African",
+  "South Asian" = "South Asian",
+  "South East Asian" = "Southeast Asian",
+  "White" = "White"
+)
+
+eth_colors <- c(
+  "African" = "#e41a1c", "African American" = "#ff7f00",
+  "Caribbean" = "#984ea3", "East Asian" = "#4daf4a",
+  "Hispanic/Latino" = "#a65628", "Indigenous" = "#f781bf",
+  "Middle Eastern/N. African" = "#999999", "South Asian" = "#377eb8",
+  "Southeast Asian" = "#66c2a5", "White" = "#fdae61"
+)
+
+cat_order <- c("African", "African American", "Caribbean", "East Asian",
+               "Hispanic/Latino", "Indigenous", "Middle Eastern/N. African",
+               "South Asian", "Southeast Asian", "White")
+
+prolific_cat_order <- c("African", "Black/African American", "Caribbean", "East Asian",
+                        "Latino/Hispanic", "Native American or Alaskan Native", "Middle Eastern",
+                        "South Asian", "South East Asian", "White")
+
+prolific_eth_colors <- c(
+  "African"                          = "#e41a1c",
+  "Black/African American"           = "#ff7f00",
+  "Caribbean"                        = "#984ea3",
+  "East Asian"                       = "#4daf4a",
+  "Latino/Hispanic"                  = "#a65628",
+  "Native American or Alaskan Native"= "#f781bf",
+  "Middle Eastern"                   = "#999999",
+  "South Asian"                      = "#377eb8",
+  "South East Asian"                 = "#66c2a5",
+  "White"                            = "#fdae61"
+)
+
+```
+
+### Self-Identification Shifts with Algorithm Categories
+
+```{r}
+#| warning: false
+#| label: fig-ethnicity-sankey
+#| fig-width: 12
+#| fig-height: 8
+#| fig-cap: "Alluvial (Sankey) diagram showing how racial and ethnic self-identification shifts as the available categories change across alternative classification systems used in clinical calculators. Each vertical bar (stratum) represents one system: survey ethnicity, the single free-choice category participants selected when they signed up for the survey platform, followed by the race/ethnicity categories offered by spirometry references (GLI), eGFR, and cardiovascular risk (pooled cohort) algorithms. Each flowing ribbon represents respondents who shared the same combination of choices across all four systems; ribbon width is proportional to the number of respondents on that path. Ribbons that fan out or merge across columns indicate that respondents using one label did not consistently use the same label in the next system. The extensive criss-crossing visible throughout the diagram illustrates that self-identification is context-dependent: the categories offered shape the choices people make. This is especially evident for groups absent from certain algorithm category sets. For example, GLI-2012 spirometry references offer no dedicated Middle Eastern or Hispanic/Latino option, yet only 40.6% of Middle Eastern and 37.5% of Hispanic/Latino respondents chose 'White', the category algorithm developers had intended for them. Respondents who declined to answer are shown separately (Declined)."
+
+algo_data <- responses |>
+  filter(!is.na(Ethnicity),
+         !is.na(`spiro-race-response`),
+         !is.na(`egfr-race-response`),
+         !is.na(`cvd-race-response`)) |>
+  transmute(
+    prolific_ethnicity = Ethnicity,
+    spiro_race = if_else(tolower(`spiro-race-response`) == "prefer not to answer", "Declined", `spiro-race-response`),
+    egfr_race  = if_else(tolower(`egfr-race-response`)  == "prefer not to answer", "Declined", `egfr-race-response`),
+    cvd_race   = if_else(tolower(`cvd-race-response`)   == "prefer not to answer", "Declined", `cvd-race-response`)
+  ) |>
+  count(prolific_ethnicity, spiro_race, egfr_race, cvd_race, name = "n") |>
+  mutate(
+    prolific_ethnicity = factor(prolific_ethnicity, levels = sort(unique(prolific_ethnicity))),
+    spiro_race = factor(spiro_race,
+                        levels = c(sort(setdiff(unique(spiro_race), "Declined")), "Declined")),
+    egfr_race  = factor(egfr_race,
+                        levels = c(sort(setdiff(unique(egfr_race), "Declined")), "Declined")),
+    cvd_race   = factor(cvd_race,
+                        levels = c(sort(setdiff(unique(cvd_race), "Declined")), "Declined"))
+  )
+
+ggplot(algo_data,
+       aes(axis1 = prolific_ethnicity, axis2 = spiro_race,
+           axis3 = egfr_race, axis4 = cvd_race,
+           y = n)) +
+  geom_alluvium(aes(fill = prolific_ethnicity), width = 1/4, alpha = 0.7, discern = TRUE) +
+  geom_stratum(width = 1/4, fill = "white", color = "grey70", linewidth = 0.1, discern = TRUE) +
+  geom_text(stat = "stratum", discern = TRUE,
+            aes(label = after_stat(stringr::str_wrap(sub("\\.[0-9]+$", "", as.character(stratum)), width = 12))),
+            size = 2.5) +
+  scale_x_discrete(limits = c( "Survey Ethnicity\n(single choice)",
+                               "Spirometry\n(GLI)",
+                               "eGFR",
+                               "CVD (Pooled Cohort)"),
+                   expand = c(0.15, 0.05)) +
+  scale_fill_manual(values = prolific_eth_colors, guide = "none") +
+  labs(y = "Number of respondents") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank()
+  )
+```
+
+```{r}
+#| label: sankey-stats
+#| output: false
+
+responses |>
+  filter(Ethnicity %in% c("African", "Black/African American", "South Asian", "East Asian")) |>
+  select(Ethnicity, `spiro-race-response`, `egfr-race-response`, `cvd-race-response`) |>
+  pivot_longer(cols = -Ethnicity, names_to = "algorithm", values_to = "response") |>
+  count(Ethnicity, algorithm, response) |>
+  group_by(Ethnicity, algorithm) |>
+  mutate(pct = round(n / sum(n) * 100)) |>
+  ungroup() |>
+  arrange(Ethnicity, algorithm, desc(n))
+```
+
+```{r}
+#| label: calc-gli-white-stats
+#| output: false
+
+gli_white_pct_ci <- function(eth) {
+  v <- responses[["spiro-race-response"]][responses$Ethnicity == eth]
+  v <- v[!is.na(v)]
+  hits <- v == "White"
+  reps <- replicate(2000, mean(sample(hits, length(hits), replace = TRUE)) * 100)
+  list(pct = mean(hits) * 100, ci = quantile(reps, c(0.025, 0.975), names = FALSE))
+}
+
+gli_me  <- gli_white_pct_ci("Middle Eastern")
+gli_lat <- gli_white_pct_ci("Latino/Hispanic")
+```
+
+Participants' self-identification shifted with the categories offered by different clinical algorithms (@fig-ethnicity-sankey). Multiethnic individuals (@suppfig-ethnicity-upset; @suppfig-ethnicity-concordance) and populations often excluded from algorithm categories were more likely to self-classify inconsistently with developers' intent. For example, although GLI-2012 developers considered Middle Eastern and Hispanic individuals as part of the White category [@quanjer_multi-ethnic_2012], only `r fmt_ci(gli_me$pct, gli_me$ci)` of Middle Eastern and `r fmt_ci(gli_lat$pct, gli_lat$ci)` of Latino/Hispanic respondents self-classified as White when offered GLI-2012 categories.
+
+### Experience of Racism
+
+```{r}
+#| label: race_misclassify
+#| output: false
+
+# question: Have you ever had the experience of noticing that a doctor, nurse, or clinic staff have filled out your race or ethnicity on a form or computer screen without asking you?
+responses |>
+   filter(!is.na(`rep-misclassify`)) |>
+   count(`rep-misclassify`) |>
+   mutate(pct = n / sum(n) * 100)
+
+```
+
+```{r}
+#| label: calc-racism-bias-stats
+#| output: false
+
+racism_x <- responses[["racism-experience"]]
+pct_racism_overall <- pct_match(racism_x, "Yes")
+ci_racism_overall  <- boot_ci_match(racism_x, "Yes")
+
+racism_by_eth <- responses |>
+  filter(!is.na(`demo-ethnicity`)) |>
+  rowwise() |>
+  mutate(eth_list = list(names(ethnicity_categories_early)[
+    sapply(ethnicity_categories_early, \(pat) str_detect(`demo-ethnicity`, pat))
+  ])) |>
+  ungroup() |>
+  unnest(eth_list)
+
+racism_pct_ci <- function(eth) {
+  v <- racism_by_eth[["racism-experience"]][racism_by_eth$eth_list == eth]
+  list(pct = pct_match(v, "Yes"), ci = boot_ci_match(v, "Yes"))
+}
+racism_white     <- racism_pct_ci("White")
+racism_caribbean <- racism_pct_ci("Caribbean")
+
+# rep-bias-problem: denominator excludes "Unsure"
+bias_x <- responses[["rep-bias-problem"]]
+bias_x <- bias_x[!is.na(bias_x) & bias_x != "Unsure"]
+pct_bias_major <- pct_match(bias_x, "A major problem")
+ci_bias_major  <- boot_ci_match(bias_x, "A major problem")
+pct_bias_minor <- pct_match(bias_x, "A minor problem")
+ci_bias_minor  <- boot_ci_match(bias_x, "A minor problem")
+pct_bias_none  <- pct_match(bias_x, "Not a problem")
+ci_bias_none   <- boot_ci_match(bias_x, "Not a problem")
+```
+
+Overall, `r fmt_ci(pct_racism_overall, ci_racism_overall)` of participants reported unfair healthcare treatment because of their race or ethnicity, ranging from `r fmt_ci(racism_white$pct, racism_white$ci)` among White participants to `r fmt_ci(racism_caribbean$pct, racism_caribbean$ci)` among Caribbeans. About `r fmt_ci(pct_bias_major, ci_bias_major)` viewed racial bias as a major problem in healthcare, `r fmt_ci(pct_bias_minor, ci_bias_minor)` as minor, and `r fmt_ci(pct_bias_none, ci_bias_none)` as not a problem (@suppfig-rep-bias).
+
+We repeated the analysis among those who had experienced racism in healthcare (@supptab-characteristics). They expressed lower net comfort with every predictor (@suppfig-racism-comfort-factor), with the largest drops for race/ethnicity (+62.4% vs. +41.6%) and ZIP or postal code (+14.5% vs. +7.1%), and were less likely to feel represented by existing categories (@suppfig-racism-reaction-race-specific; e.g., GLI-2012 +25.7% vs. +12.2%, FRAX +42.8% vs. +26.4%). Most notably, while the full sample disagreed that race-specific algorithms could cause harm (net -21.2% to -28.5%), this subgroup shifted toward agreement (net -3.0% to +6.6%). Despite these concerns, a majority still agreed that using race helps improve care, though net agreement was lower (e.g., +24.9% vs. +38.9% for GLI-2012).
+
+```{r}
+#| label: calc-racism-spiro-stats
+#| output: false
+
+racism_spiro_react <- simplify_reaction(
+  responses[["spiro-new-reaction"]][responses[["racism-experience"]] == "Yes"]
+)
+pct_racism_spiro_rf <- pct_match(racism_spiro_react, "Prefer race-free")
+ci_racism_spiro_rf  <- boot_ci_match(racism_spiro_react, "Prefer race-free")
+pct_racism_spiro_rb <- pct_match(racism_spiro_react, "Prefer race-based")
+ci_racism_spiro_rb  <- boot_ci_match(racism_spiro_react, "Prefer race-based")
+```
+
+When asked about revised race-free algorithms (@suppfig-racism-perceptions-revised-algorithms), those who had experienced racism showed greater preference for the revised versions, though most still preferred the race-specific version, except for spirometry, where `r fmt_ci(pct_racism_spiro_rf, ci_racism_spiro_rf)` preferred race-averaged GLI-Global over `r fmt_ci(pct_racism_spiro_rb, ci_racism_spiro_rb)` who preferred race-specific GLI-2012.
+
+About 9.4% of participants shared experiences of racism in healthcare; of 95 responses, 2 were excluded for non-substantive content and 3 for being outside healthcare. The most common instances involved differential treatment such as poorer provider attitudes or quality of care (30.0%), dismissive or neglectful behaviour (28.9%), and longer wait times or lower priority (22.2%). Participants also reported stereotypical assumptions about pain tolerance, background, lifestyle, or socioeconomic status, and attitudes towards individuals with mixed backgrounds, particularly among Indigenous respondents. The codebook (@supptab-codebook-racism), code frequencies (@supptab-codebook-freq), and example responses are in the appendix.
+
+## Discussion
+
+Our multinational survey, while not representative, captured opinions across diverse cultures and geographies, with several key findings. First, most respondents were comfortable with race or ethnicity as a predictor in clinical calculators (`r paste0(round(pct_race_comfort, 1),"%")`); this held across countries, self-identified groups, and among those who had experienced racism in healthcare. Second, across spirometry, eGFR, and cardiovascular risk calculators, 40.0% to 47.6% preferred race-specific versions, whereas 16.7% to 28.2% preferred race-free alternatives. Third, a substantial proportion did not find themselves represented in race and ethnicity categories, from 22.1% for FRAX to 43.9% for pooled cohort equations. Fourth, 2.5 times as many respondents were uncomfortable with postal or ZIP code as with race or ethnicity, even though postal or ZIP code has been adopted in some revised algorithms.
+
+Although many respondents described race or ethnicity in biological terms, its fluidity was evident in our participants' shifting self-identification with different categories. Race and ethnicity are socially determined constructs [@bonilla-silva1999] with complex biological associations [@rose2023; @holland2008]. Our findings are consistent with literature showing that recorded race or ethnicity varies with who observes it [@roth2022; @herman2010], when [@liebler2017], social status cues [@freeman2011; @saperstein2014], and the classification scheme [@nicolas2018; @harris2002], sometimes with significant consequences [@movva_coarse; @Adibi2025a].
+
+Prior US-focused work has reached similar conclusions. Diao et al. [@diao2026] surveyed 1,750 US adults and found 79.8% preferred their physician use all available information including race, and only 22.0% agreed there are "no circumstances under which a doctor should use my race in clinical care." More respondents were uncomfortable with income (39.3%) or ZIP code (22.3%) than race (8.8%). Our multinational sample was younger, more racially and ethnically diverse, and more likely to view racism as a major problem in healthcare, yet was still less likely to believe doctors should never use race or ethnicity (12.8%), and more uncomfortable with postal or ZIP code (32.6%).
+
+These surveys show that seeking community input can yield actionable insights. The widespread discomfort with ZIP or postal code suggests that replacing race or ethnicity with an area-based deprivation score may not be perceived as more trustworthy by patients [@Adibi2025]. At least three widely used cardiovascular risk calculators—the UK's QRISK3 [@hippisley-cox2017], the American Heart Association's PREVENT [@khan2024], and Scotland's ASSIGN [@woodward2006]—use postal or ZIP code as an optional input to look up area-based deprivation indices. Future studies should examine how often patients volunteer their postal or ZIP codes when doctors use these tools, or how often these data are used without disclosure.
+
+Our findings suggest a disconnect between public perspectives and the emerging trend in clinical practice to remove race and ethnicity from algorithms. In a US survey of 66 pulmonologists, 64% recommended revised race-averaged spirometry references versus 9% who recommended the race-specific version [@brems2026]. In a qualitative study of 23 patients at a Boston safety-net hospital, most were unaware that race was used in clinical calculators and felt it should not be, with Black participants reporting widespread mistrust driven by experiences of racism and fear of experimentation [@schmidt2023]. A separate study of 42 American stakeholders from universities, government, professional societies, and industry noted that clinicians and patients are often unaware of how widely algorithms are deployed and that algorithms can be biased regardless of whether they include race [@jain2023; @obermeyer2019; @pierson2021; @obermeyer2021; @zink2024; @siddique_impact_2024; @tipton2023; @cmss2023].
+
+Several limitations apply. Our results reflect initial reactions: respondents were not primed with any arguments or evidence and might shift their views with such information. Our multinational design was not intended to yield representative samples of individual countries, and the Prolific participant pool skews younger and more educated and excludes populous nations such as China and Pakistan. Self-selection into studies by topic, reward rate, and survey length may also introduce hard-to-quantify response biases [@aksoy2025].
+
+Decisions about what factors to include or exclude in clinical algorithms are not purely technical and involve many value judgments. Many philosophers of science have argued that researchers cannot avoid such judgments under uncertainty [@rudner1953; @douglas2000], and that ethical values informing them should reflect public values rather than expert values alone [@douglas2005; @douglas2009; @kitcher_science_2011]. These arguments are especially relevant to algorithmic reform given the historical and current realities of racism and discrimination in healthcare [@rethinki2025].
+
+Recent medical society revisions to formerly race-specific algorithms in cardiology, nephrology, and pulmonology have wide-ranging implications for tens of millions of people in the US [@diao2024; @diao2024a; @Delgado2022] and potentially many more globally. Yet only the kidney function task force reported systematically seeking input from community members, patients, and caregivers [@Delgado2022]. The lack of widespread community consultation in algorithmic reform is a missed opportunity to raise awareness, align values, and preserve public trust.
+
+US public confidence in medical societies such as the American Heart Association (82%) and American Medical Association (77%) remains high [@adams2026], even as trust in health institutions might be declining [@isthere2025; @kffpoll2026]. A recent survey of over 70,000 adults across 68 countries found that the public views scientists as having greater integrity than openness and concluded that scientists should pursue genuine dialogue rather than top-down communication [@cologna2025].
+
+Professional medical societies and algorithm developers should engage with patient and public opinion regardless of whether their final recommendation is to remove or keep race and ethnicity as predictors. 
+
+
+### Data and Code Availability
+
+A deidentified dataset and the fully reproducible Quarto source for this paper are both available at https://github.com/aminadibi/algorithmic-reform-survey.
+
+## Acknowledgments
+
+The study was funded by the University of British Columbia Public Scholars Initiative and Legacy for Airway Health. AA is also supported by a University of British Columbia 4-Year Doctoral Fellowship and RESPNet BC. We thank our patient partners for sharing their feedback and insights throughout this study, and are grateful to Legacy for Airway Health, Dr. Phalgun Joshi, and Beth White for supporting patient partner engagement. We are also grateful to Dr. Kennedy Borle and Dr. Alexa Norton for their advice on ethics application and study design. The authors acknowledge that most of the activities of this research project were conducted on the traditional, ancestral, and unceded territories of the Musqueam and Kwikwetlem Nations.
+
+## Author contributions
+
+AA conceptualized the study and secured funding. AA and KXL drafted and revised survey questionnaire with input from MS, EM, JD, and patient partners. KXL conducted interviews with patient partners. Analyses were conducted by AA, KXL, and NE. CC and JD provided clinical input and oversight. AA drafted the first version of the manuscript. All authors contributed to contextualization of the results and critical revision of the manuscript.
+
+## Competing Interests
+
+The authors have no competing interests to declare.
+
+## References
+
+::: {#refs}
+:::
+
+## Additional Participants Characteristics {.appendix}
+
+::: {#supptab-characteristics-by-ethnicity}
+```{r}
+#| label: supptab-characteristics-by-ethnicity
+responses |>
+    select(`Age group`, `Employment status`, Gender, `Socioeconomic status`, Ethnicity,
+           Sex, `Country of residence`, `Country of birth`) |>
+    mutate(`Socioeconomic status` = as.numeric(`Socioeconomic status`),
+           across(c(Gender, `Employment status`), \(x) str_remove(x, "\\s*\\(.*\\)")),
+           Gender = factor(
+             if_else(is.na(Gender) | Gender == "Rather not say",
+                     "Rather not say / Unknown", Gender),
+             levels = c("Woman", "Man", "Non-binary", "Rather not say / Unknown")
+           ),
+           `Employment status` = factor(`Employment status`,
+             levels = c("Full-Time", "Part-Time", "Not in paid work", "Unemployed",
+                        "Due to start a new job within the next month", "Other")) |>
+             forcats::fct_na_value_to_level("Unknown"),
+           `Region of residence` = factor(
+             case_when(
+               `Country of residence` %in% north_america      ~ "Northern America",
+               `Country of residence` %in% europe             ~ "Europe",
+               `Country of residence` %in% africa             ~ "Africa",
+               `Country of residence` %in% asia               ~ "Asia",
+               `Country of residence` %in% latin_am_caribbean ~ "Latin America and the Caribbean",
+               `Country of residence` %in% oceania            ~ "Oceania"
+             ),
+             levels = region_levels
+           ),
+           `Region of birth` = factor(
+             case_when(
+               `Country of birth` %in% north_america      ~ "Northern America",
+               `Country of birth` %in% europe             ~ "Europe",
+               `Country of birth` %in% africa             ~ "Africa",
+               `Country of birth` %in% asia               ~ "Asia",
+               `Country of birth` %in% latin_am_caribbean ~ "Latin America and the Caribbean",
+               `Country of birth` %in% oceania            ~ "Oceania"
+             ),
+             levels = region_levels
+           )) |>
+    select(-`Country of residence`, -`Country of birth`) |>
+    relocate(Gender, .before = `Employment status`) |>
+    relocate(Sex, .before = Gender) |>
+    relocate(`Employment status`, `Socioeconomic status`, .after = last_col()) |>
+    tbl_summary(by = Ethnicity,
+                missing = "ifany",
+                missing_text = "Unknown",
+                missing_stat = "{N_miss} ({p_miss}%)",
+                label = list(`Age group` ~ "Age group, years"),
+                digits = list(all_continuous() ~ 0, all_categorical() ~ c(0, 0))) |>
+    modify_footnote_body(
+      footnote = "Sex as recorded on legal/official documents",
+      columns = "label",
+      rows = variable == "Sex" & row_type == "label"
+    ) |>
+    modify_footnote_body(
+      footnote = "Including Trans Male/Trans Man",
+      columns = "label",
+      rows = variable == "Gender" & label == "Man"
+    ) |>
+    modify_footnote_body(
+      footnote = "Including Trans Female/Trans Woman",
+      columns = "label",
+      rows = variable == "Gender" & label == "Woman"
+    ) |>
+    modify_footnote_body(
+      footnote = "e.g. homemaker, retired or disabled",
+      columns = "label",
+      rows = variable == "Employment status" & label == "Not in paid work"
+    ) |>
+    modify_footnote_body(
+      footnote = "Regions classified according to the United Nations M49 standard (https://unstats.un.org/unsd/methodology/m49/).",
+      columns = "label",
+      rows = variable == "Region of residence" & row_type == "label"
+    ) |>
+    as_flex_table()
+```
+
+Characteristics of participants by ethnicity, based on demographics data collected by Prolific.
+:::
+
+::: {#suppfig-top-country-residence}
+```{r}
+responses |>
+  filter(!is.na(`Country of residence`)) |>
+  count(`Country of residence`) |>
+  mutate(pct = n / sum(n) * 100) |>
+  arrange(desc(n)) |>
+  slice_head(n = 30) |> 
+  ggplot(aes(x = reorder(`Country of residence`, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  geom_text(aes(label = sprintf("%d (%.0f%%)", n, pct)), hjust = -0.1, size = 3) +
+  coord_flip() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.18))) +
+  labs(x = NULL, y = "Count") +
+  theme_minimal()
+```
+
+Respondents' Country of Residence (Top 30)
+:::
+
+::: {#suppfig-top-country-birth}
+```{r}
+responses |>
+  filter(!is.na(`Country of birth`)) |>
+  count(`Country of birth`) |>
+  mutate(pct = n / sum(n) * 100) |>
+  arrange(desc(n)) |>
+  slice_head(n = 30) |> 
+  ggplot(aes(x = reorder(`Country of birth`, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  geom_text(aes(label = sprintf("%d (%.0f%%)", n, pct)), hjust = -0.1, size = 3) +
+  coord_flip() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.18))) +
+  labs(x = NULL, y = "Count") +
+  theme_minimal()
+```
+
+Respondents' Country of Birth (Top 30)
+:::
+
+::: {#suppfig-ethnicity-upset}
+```{r}
+#| warning: false
+
+
+library(UpSetR)
+
+# Build binary matrix of ethnicity selections for UpSet plot
+ethnicity_matrix <- responses |>
+  filter(!is.na(`demo-ethnicity`)) |>
+  transmute(
+    African = as.integer(str_detect(`demo-ethnicity`, "African \\(")),
+    `African American` = as.integer(str_detect(`demo-ethnicity`, "African American")),
+    Caribbean = as.integer(str_detect(`demo-ethnicity`, "Caribbean")),
+    `East Asian` = as.integer(str_detect(`demo-ethnicity`, "East Asian")),
+    `Hispanic/Latino` = as.integer(str_detect(`demo-ethnicity`, "Hispanic")),
+    Indigenous = as.integer(str_detect(`demo-ethnicity`, "Indigenous")),
+    `Middle Eastern/North African` = as.integer(str_detect(`demo-ethnicity`, "Middle Eastern")),
+    `South Asian` = as.integer(str_detect(`demo-ethnicity`, "(?<!east )South Asian")),
+    `Southeast Asian` = as.integer(str_detect(`demo-ethnicity`, "Southeast Asian")),
+    White = as.integer(str_detect(`demo-ethnicity`, "White"))
+  ) |>
+  as.data.frame()
+
+upset(ethnicity_matrix,
+      sets = rev(names(ethnicity_matrix)),
+      keep.order = TRUE,
+      nintersects = 25,
+      order.by = "freq",
+      mb.ratio = c(0.55, 0.45),
+      text.scale = c(1.3, 1.1, 1.1, 1, 1.3, 1),
+      main.bar.color = "#4575b4",
+      sets.bar.color = "#d73027",
+      matrix.color = "#333333",
+      mainbar.y.label = "Intersection Size",
+      sets.x.label = "Total Selections")
+```
+
+Intersection analysis of self-reported ethnic identities among survey respondents. Horizontal bars (left) show the total number of respondents selecting each ethnicity. Vertical bars (top) show the frequency of each unique combination of ethnicities, ordered by size. Connected dots indicate multi-ethnic identifications. Approximately 30% of respondents selected two or more ethnic categories, reflecting the multi-dimensional nature of ethnic identity.
+:::
+
+::: {#suppfig-ethnicity-concordance}
+```{r}
+#| warning: false
+#| fig-width: 8
+#| fig-height: 7
+
+# Denominator: unique respondents per Prolific category (original names)
+prolific_totals <- responses |>
+  filter(!is.na(`demo-ethnicity`), !is.na(Ethnicity)) |>
+  count(prolific_ethnicity = Ethnicity, name = "total")
+
+# Concordance matrix: for each Prolific category, % who selected each survey category
+heatmap_data <- responses |>
+  filter(!is.na(`demo-ethnicity`), !is.na(Ethnicity)) |>
+  transmute(
+    prolific_ethnicity = Ethnicity,
+    African = str_detect(`demo-ethnicity`, "African \\("),
+    `African American` = str_detect(`demo-ethnicity`, "African American"),
+    Caribbean = str_detect(`demo-ethnicity`, "Caribbean"),
+    `East Asian` = str_detect(`demo-ethnicity`, "East Asian"),
+    `Hispanic/Latino` = str_detect(`demo-ethnicity`, "Hispanic"),
+    Indigenous = str_detect(`demo-ethnicity`, "Indigenous"),
+    `Middle Eastern/N. African` = str_detect(`demo-ethnicity`, "Middle Eastern"),
+    `South Asian` = str_detect(`demo-ethnicity`, "(?<!east )South Asian"),
+    `Southeast Asian` = str_detect(`demo-ethnicity`, "Southeast Asian"),
+    White = str_detect(`demo-ethnicity`, "White")
+  ) |>
+  pivot_longer(cols = -prolific_ethnicity, names_to = "survey_ethnicity", values_to = "selected") |>
+  filter(selected) |>
+  count(prolific_ethnicity, survey_ethnicity, name = "n") |>
+  left_join(prolific_totals, by = "prolific_ethnicity") |>
+  mutate(
+    pct = n / total * 100,
+    prolific_ethnicity = factor(prolific_ethnicity, levels = rev(prolific_cat_order)),
+    survey_ethnicity   = factor(survey_ethnicity,   levels = cat_order)
+  )
+
+ggplot(heatmap_data, aes(x = survey_ethnicity, y = prolific_ethnicity, fill = pct)) +
+  geom_tile(color = "white", linewidth = 0.8) +
+  geom_text(aes(label = ifelse(pct >= 2, sprintf("%.0f%%", pct), "")), size = 3) +
+  scale_fill_gradient(low = "white", high = "#2166ac",
+                      name = "Row %",
+                      limits = c(0, 100)) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+  labs(x = "Survey ethnicity (multi-select)", y = "Prolific ethnicity (single-choice)") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank()
+  )
+```
+
+Heatmap comparing participants' self-reported ethnicity at Prolific sign-up (single-choice, rows) with their self-reported ethnicity in our survey (multi-select, columns). The Prolific classification was used for quota sampling. Cell color and labels show the percentage of respondents in each Prolific sign-up category who selected a given survey ethnicity; row percentages can exceed 100% because survey responses were multi-select. Diagonal cells represent within-category concordance; off-diagonal cells reveal cross-category identification.
+:::
+
+## Results Among Those Who Experienced Racism {#sec-racism-subgroup .appendix}
+
+::: {#supptab-characteristics}
+```{r}
+ethnicity_cats <- c(
+  "African \\(" = "African",
+  "African American" = "African American",
+  "Caribbean" = "Caribbean",
+  "East Asian" = "East Asian",
+  "Hispanic" = "Hispanic/Latino",
+  "Indigenous" = "Indigenous",
+  "Middle Eastern" = "Middle Eastern/North African",
+  "(?<!east )South Asian" = "South Asian",
+  "Southeast Asian" = "Southeast Asian",
+  "White" = "White"
+)
+
+char_df <- responses |>
+  mutate(
+    `Experienced racism in healthcare` = if_else(
+      `racism-experience` == "Yes", "Yes", "No", missing = "No"
+    )
+  ) |>
+  mutate(across(
+    all_of(setNames(rep("demo-ethnicity", length(ethnicity_cats)), ethnicity_cats)),
+    .fns = ~ NULL
+  ))
+
+# Build ethnicity binary columns
+for (i in seq_along(ethnicity_cats)) {
+  pat <- names(ethnicity_cats)[i]
+  lab <- ethnicity_cats[i]
+  char_df[[lab]] <- factor(
+    if_else(str_detect(char_df$`demo-ethnicity`, pat), "Yes", "No", missing = "No"),
+    levels = c("Yes", "No")
+  )
+}
+
+char_df |>
+  select(
+    `Age group`, Sex, Gender, `Employment status`, `Socioeconomic status`,
+    all_of(unname(ethnicity_cats)),
+    `Experienced racism in healthcare`
+  ) |>
+  mutate(
+    across(c(Gender, `Employment status`), \(x) str_remove(x, "\\s*\\(.*\\)")),
+    Gender = factor(
+      if_else(is.na(Gender) | Gender == "Rather not say",
+              "Rather not say / Unknown", Gender),
+      levels = c("Woman", "Man", "Non-binary", "Rather not say / Unknown")
+    ),
+    `Employment status` = factor(`Employment status`,
+      levels = c("Full-Time", "Part-Time", "Not in paid work", "Unemployed",
+                 "Due to start a new job within the next month", "Other")) |>
+      forcats::fct_na_value_to_level("Unknown"),
+    `Socioeconomic status` = as.numeric(`Socioeconomic status`)
+  ) |>
+  tbl_summary(
+    by = `Experienced racism in healthcare`,
+    missing = "no",
+    digits = list(all_continuous() ~ 1, all_categorical() ~ c(0, 0)),
+    label = c(
+      list(`Socioeconomic status` ~ "Socioeconomic status"),
+      setNames(as.list(unname(ethnicity_cats)), unname(ethnicity_cats))
+    ),
+    type = setNames(
+      replicate(length(ethnicity_cats), "dichotomous", simplify = FALSE),
+      unname(ethnicity_cats)
+    ),
+    value = setNames(
+      replicate(length(ethnicity_cats), "Yes", simplify = FALSE),
+      unname(ethnicity_cats)
+    )
+  ) |>
+    modify_footnote_body(
+      footnote = "Sex as recorded on legal/official documents",
+      columns = "label",
+      rows = variable == "Sex" & row_type == "label"
+    ) |>
+    modify_footnote_body(
+      footnote = "Participants were asked the following question: Where would you put yourself on the socioeconomic ladder? Choose between 1 to 10.",
+      columns = "label",
+      rows = variable == "Socioeconomic status" & row_type == "label"
+    ) |>
+    as_flex_table()
+```
+
+Characteristics of survey participants who reported unfair treatment due to race/ethnicity. Self-reported ethnicity categories are not mutually exclusive, as respondents could select multiple identities.
+
+:::
+
+```{r}
+#| label: unfair-treatment-subset
+
+unfair_subset <- responses |>
+  filter(`racism-experience` == "Yes")
+
+```
+
+::: {#suppfig-racism-comfort-factor}
+```{r}
+#| label: suppfig-racism-comfort-factor
+#| fig-width: 9
+#| fig-height: 5
+
+factor_vars <- c("fd-factors_1", "fd-factors_2", "fd-factors_3",
+                 "fd-factors_4", "fd-factors_5", "fd-factors_6", "fd-factors_7")
+factor_labels <- c("Age", "Biological sex", "Race/ethnicity",
+                   "ZIP or Postal Code", "Environmental exposures", "Genetic ancestry", "Country of origin")
+
+comfort_df_unfair <- unfair_subset |>
+  select(all_of(factor_vars)) |>
+  setNames(factor_labels) |>
+  pivot_longer(everything(), names_to = "factor", values_to = "comfort") |>
+  filter(!is.na(comfort)) |>
+  mutate(comfort = factor(comfort, levels = comfort_levels))
+
+comfort_summary_unfair <- comfort_df_unfair |>
+  count(factor, comfort) |>
+  group_by(factor) |>
+  mutate(pct = n / sum(n) * 100) |>
+  ungroup()
+
+factor_order_unfair <- comfort_summary_unfair |>
+  mutate(side = case_when(
+    comfort %in% c("Somewhat comfortable", "Extremely comfortable") ~ "pos",
+    comfort %in% c("Somewhat uncomfortable", "Extremely uncomfortable") ~ "neg",
+    TRUE ~ "neutral"
+  )) |>
+  group_by(factor) |>
+  summarise(
+    net = sum(pct[side == "pos"]) - sum(pct[side == "neg"]),
+    .groups = "drop"
+  ) |>
+  arrange(net) |>
+  pull(factor)
+
+comfort_plot_unfair <- comfort_summary_unfair |>
+  mutate(factor = factor(factor, levels = factor_order_unfair)) |>
+  group_by(factor) |>
+  mutate(
+    neutral_pct = pct[comfort == "Neither comfortable nor uncomfortable"],
+    xmin = case_when(
+      comfort == "Extremely uncomfortable" ~
+        -(pct[comfort == "Extremely uncomfortable"] +
+          pct[comfort == "Somewhat uncomfortable"] +
+          neutral_pct / 2),
+      comfort == "Somewhat uncomfortable" ~
+        -(pct[comfort == "Somewhat uncomfortable"] +
+          neutral_pct / 2),
+      comfort == "Neither comfortable nor uncomfortable" ~
+        -(neutral_pct / 2),
+      comfort == "Somewhat comfortable" ~
+        neutral_pct / 2,
+      comfort == "Extremely comfortable" ~
+        neutral_pct / 2 + pct[comfort == "Somewhat comfortable"]
+    ),
+    xmax = xmin + pct
+  ) |>
+  ungroup()
+
+net_labels_unfair <- comfort_plot_unfair |>
+  group_by(factor) |>
+  summarise(
+    net = sum(pct[comfort %in% c("Somewhat comfortable", "Extremely comfortable")]) -
+          sum(pct[comfort %in% c("Somewhat uncomfortable", "Extremely uncomfortable")]),
+    x_end = max(xmax),
+    .groups = "drop"
+  )
+
+ggplot(comfort_plot_unfair, aes(y = factor, xmin = xmin, xmax = xmax, fill = comfort)) +
+  geom_rect(aes(ymin = as.numeric(factor) - 0.35,
+                ymax = as.numeric(factor) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = factor,
+                label = ifelse(abs(xmax - xmin) > 6, sprintf("%.1f%%", pct), "")),
+            size = 3) +
+  geom_text(data = net_labels_unfair,
+            aes(x = x_end + 2, y = factor, label = sprintf("%+.1f%%", net)),
+            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+  geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
+  scale_fill_manual(
+    values = c(
+      "Extremely uncomfortable" = "#d73027",
+      "Somewhat uncomfortable"  = "#fc8d59",
+      "Neither comfortable nor uncomfortable" = "#cccccc",
+      "Somewhat comfortable"    = "#91bfdb",
+      "Extremely comfortable"   = "#4575b4"
+    ),
+    name = NULL,
+    breaks = comfort_levels
+  ) +
+  scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
+                     expand = expansion(mult = c(0.05, 0.12))) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8))
+```
+
+Comfort with calculator factors among respondents who reported unfair treatment due to race/ethnicity.
+:::
+
+```{r}
+#| output: false
+#| 
+likert_df_unfair <- unfair_subset |>
+  select(all_of(likert_vars)) |>
+  setNames(c(
+    "GLI-2012: Represented", "GLI-2012: Worry harm", "GLI-2012: Helps care",
+    "2009 CKD-EPI: Represented", "2009 CKD-EPI: Worry harm", "2009 CKD-EPI: Helps care",
+    "2013 ASCVD: Represented", "2013 ASCVD: Worry harm", "2013 ASCVD: Helps care",
+    "FRAX: Represented", "FRAX: Worry harm", "FRAX: Helps care"
+  )) |>
+  pivot_longer(everything(), names_to = "question", values_to = "response") |>
+  filter(!is.na(response)) |>
+  mutate(
+    algorithm = str_extract(question, "^[^:]+"),
+    dimension = str_extract(question, "(?<=: ).+"),
+    response = factor(response, levels = likert_levels)
+  )
+```
+
+::: {#suppfig-racism-reaction-race-specific}
+```{r}
+#| label: suppfig-racism-reaction-race-specific
+#| fig-width: 10
+#| fig-height: 7
+
+likert_full_unfair <- likert_df_unfair |>
+  count(algorithm, dimension, response) |>
+  group_by(algorithm, dimension) |>
+  mutate(pct = n / sum(n) * 100) |>
+  ungroup() |>
+  mutate(
+    response_num = as.numeric(response),
+    dimension = factor(dimension, levels = c("Represented", "Worry harm", "Helps care")),
+    question_label = paste(algorithm, dimension, sep = ": ")
+  )
+
+likert_diverging_unfair <- likert_full_unfair |>
+  group_by(algorithm, dimension) |>
+  mutate(
+    neutral_pct = pct[response_num == 3],
+    xmin = case_when(
+      response_num == 1 ~ -(pct[response_num == 2] + pct[response_num == 1] + neutral_pct / 2),
+      response_num == 2 ~ -(pct[response_num == 2] + neutral_pct / 2),
+      response_num == 3 ~ -neutral_pct / 2,
+      response_num == 4 ~ neutral_pct / 2,
+      response_num == 5 ~ pct[response_num == 4] + neutral_pct / 2
+    ),
+    xmax = case_when(
+      response_num == 1 ~ -(pct[response_num == 2] + neutral_pct / 2),
+      response_num == 2 ~ -neutral_pct / 2,
+      response_num == 3 ~ neutral_pct / 2,
+      response_num == 4 ~ pct[response_num == 4] + neutral_pct / 2,
+      response_num == 5 ~ pct[response_num == 4] + pct[response_num == 5] + neutral_pct / 2
+    )
+  ) |>
+  ungroup()
+
+net_labels_likert_unfair <- likert_diverging_unfair |>
+  group_by(algorithm, dimension) |>
+  summarise(
+    net = sum(pct[response_num %in% c(4, 5)]) - sum(pct[response_num %in% c(1, 2)]),
+    x_end = max(xmax),
+    .groups = "drop"
+  )
+
+ggplot(likert_diverging_unfair, aes(y = algorithm, xmin = xmin, xmax = xmax, fill = response)) +
+  geom_rect(aes(ymin = as.numeric(factor(algorithm)) - 0.4,
+                ymax = as.numeric(factor(algorithm)) + 0.4)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = algorithm,
+                label = ifelse(abs(xmax - xmin) > 6, sprintf("%.1f%%", pct), "")),
+            size = 3) +
+  geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
+  geom_text(data = net_labels_likert_unfair,
+            aes(x = x_end + 2, y = algorithm, label = sprintf("%+.1f%%", net)),
+            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+  facet_wrap(~ dimension, ncol = 1, labeller = labeller(dimension = dimension_labels)) +
+  scale_fill_manual(
+    values = c(
+      "Strongly disagree" = "#d73027",
+      "Somewhat disagree" = "#fc8d59",
+      "Neither agree nor disagree" = "#fee090",
+      "Somewhat agree" = "#91bfdb",
+      "Strongly agree" = "#4575b4"
+    ),
+    guide = guide_legend(nrow = 1)
+  ) +
+  scale_x_continuous(labels = \(x) paste0(abs(x), "%")) +
+  labs(x = "Percent", y = NULL, fill = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        panel.grid.major.y = element_blank(),
+        strip.text = element_text(size = 11))
+```
+
+Respondent reactions to race-specific algorithms among those who reported unfair treatment due to race/ethnicity. Bars extend rightward for agreement (light and dark blue) and leftward for disagreement (light and dark red), with neutral responses (yellow) centred at zero. Net agreement (total percentage agreeing minus total percentage disagreeing) is shown to the right of each bar.
+:::
+
+::: {#suppfig-racism-perceptions-revised-algorithms}
+```{r}
+#| label: suppfig-racism-perceptions-revised
+#| fig-width: 10
+#| fig-height: 6
+
+bind_rows(
+  unfair_subset |> transmute(algorithm = "Spirometry\n(GLI-Global)", reaction = simplify_reaction(`spiro-new-reaction`)),
+  unfair_subset |> transmute(algorithm = "eGFR\n(race-free)", reaction = simplify_reaction(`egfr-new-reaction`)),
+  unfair_subset |> transmute(algorithm = "Cardiovascular Risk\n(PREVENT)", reaction = simplify_reaction(`cvd-new-reaction`))
+) |>
+  filter(!is.na(reaction)) |>
+  count(algorithm, reaction) |>
+  group_by(algorithm) |>
+  mutate(pct = n / sum(n) * 100) |>
+  ungroup() |>
+  mutate(reaction = factor(reaction, levels = c("Prefer race-based", "Neutral/Unsure", "Prefer race-free", "Prefer postal-ZIP instead of race", "Other"))) |>
+  ggplot(aes(y = algorithm, x = pct, fill = reaction)) +
+  geom_col(position = "stack") +
+  geom_text(aes(label = ifelse(pct > 5, sprintf("%.1f%%", pct), "")),
+            position = position_stack(vjust = 0.5), size = 3.5) +
+  scale_fill_manual(values = c("Prefer race-based" = "salmon", "Neutral/Unsure" = "lightgoldenrod",
+                               "Prefer race-free" = "steelblue2", "Other" = "gray70", "Prefer postal-ZIP instead of race" = "steelblue")) +
+  labs(y = NULL, x = "Percent", fill = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        panel.grid.major.y = element_blank())
+```
+
+Respondent reactions to revised algorithms among those who reported unfair treatment due to race/ethnicity.
+:::
+
+## Comfort with Different Factors by Ethnicity and Country of Residence {#sec-ethnicity-subgroup .appendix}
+
+::: {#suppfig-ethnicity-self-comfort-factor}
+```{r}
+#| label: suppfig-ethnicity-self-comfort-factor
+#| fig-width: 10
+#| fig-height: 8
+
+factors_to_show <- c("Race/ethnicity", "Country of origin", "ZIP or Postal Code")
+
+ethnicity_categories <- c(
+  "African" = "African \\(",
+  "African American" = "African American",
+  "Caribbean" = "Caribbean",
+  "East Asian" = "East Asian",
+  "Hispanic/Latino" = "Hispanic",
+  "Indigenous" = "Indigenous",
+  "Middle Eastern/\nNorth African" = "Middle Eastern",
+  "South Asian" = "(?<!east )South Asian",
+  "Southeast Asian" = "Southeast Asian",
+  "White" = "White"
+)
+
+comfort_df_selfeth <- responses |>
+  filter(!is.na(`demo-ethnicity`)) |>
+  select(`demo-ethnicity`, all_of(factor_vars)) |>
+  pivot_longer(cols = all_of(factor_vars), names_to = "factor_var", values_to = "comfort") |>
+  mutate(
+    factor = factor_labels[match(factor_var, factor_vars)],
+    comfort = factor(comfort, levels = comfort_levels)
+  ) |>
+  filter(!is.na(comfort), factor %in% factors_to_show) |>
+  select(-factor_var)
+
+# Expand: each respondent counted once per ethnicity they selected
+comfort_df_selfeth <- comfort_df_selfeth |>
+  rowwise() |>
+  mutate(eth_list = list(names(ethnicity_categories)[
+    sapply(ethnicity_categories, \(pat) str_detect(`demo-ethnicity`, pat))
+  ])) |>
+  ungroup() |>
+  unnest(eth_list) |>
+  rename(SelfEthnicity = eth_list) |>
+  select(-`demo-ethnicity`)
+
+comfort_summary_selfeth <- comfort_df_selfeth |>
+  count(SelfEthnicity, factor, comfort) |>
+  ungroup() |>
+  complete(SelfEthnicity, factor, comfort, fill = list(n = 0)) |>
+  filter(factor %in% factors_to_show) |>
+  group_by(SelfEthnicity, factor) |>
+  mutate(pct = n / sum(n) * 100) |>
+  ungroup()
+
+# Order by net comfort with race/ethnicity
+selfeth_order <- comfort_summary_selfeth |>
+  filter(factor == "Race/ethnicity") |>
+  mutate(side = case_when(
+    comfort %in% c("Somewhat comfortable", "Extremely comfortable") ~ "pos",
+    comfort %in% c("Somewhat uncomfortable", "Extremely uncomfortable") ~ "neg",
+    TRUE ~ "neutral"
+  )) |>
+  group_by(SelfEthnicity) |>
+  summarise(net = sum(pct[side == "pos"]) - sum(pct[side == "neg"]), .groups = "drop") |>
+  arrange(desc(net)) |>
+  pull(SelfEthnicity)
+
+comfort_plot_selfeth <- comfort_summary_selfeth |>
+  mutate(SelfEthnicity = factor(SelfEthnicity, levels = selfeth_order)) |>
+  group_by(SelfEthnicity, factor) |>
+  mutate(
+    neutral_pct = pct[comfort == "Neither comfortable nor uncomfortable"],
+    xmin = case_when(
+      comfort == "Extremely uncomfortable" ~
+        -(pct[comfort == "Extremely uncomfortable"] +
+          pct[comfort == "Somewhat uncomfortable"] +
+          neutral_pct / 2),
+      comfort == "Somewhat uncomfortable" ~
+        -(pct[comfort == "Somewhat uncomfortable"] + neutral_pct / 2),
+      comfort == "Neither comfortable nor uncomfortable" ~ -(neutral_pct / 2),
+      comfort == "Somewhat comfortable" ~ neutral_pct / 2,
+      comfort == "Extremely comfortable" ~
+        neutral_pct / 2 + pct[comfort == "Somewhat comfortable"]
+    ),
+    xmax = xmin + pct
+  ) |>
+  ungroup()
+
+net_labels_selfeth <- comfort_plot_selfeth |>
+  group_by(SelfEthnicity, factor) |>
+  summarise(
+    net = sum(pct[comfort %in% c("Somewhat comfortable", "Extremely comfortable")]) -
+          sum(pct[comfort %in% c("Somewhat uncomfortable", "Extremely uncomfortable")]),
+    x_end = max(xmax),
+    .groups = "drop"
+  )
+
+ggplot(comfort_plot_selfeth, aes(y = SelfEthnicity, xmin = xmin, xmax = xmax, fill = comfort)) +
+  geom_rect(aes(ymin = as.numeric(SelfEthnicity) - 0.35,
+                ymax = as.numeric(SelfEthnicity) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = SelfEthnicity,
+                label = ifelse(abs(xmax - xmin) > 8, sprintf("%.1f%%", pct), "")),
+            size = 2.5) +
+  geom_text(data = net_labels_selfeth,
+            aes(x = x_end + 2, y = SelfEthnicity, label = sprintf("%+.1f%%", net)),
+            inherit.aes = FALSE, size = 3, hjust = 0) +
+  geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
+  scale_fill_manual(
+    values = c(
+      "Extremely uncomfortable" = "#d73027",
+      "Somewhat uncomfortable"  = "#fc8d59",
+      "Neither comfortable nor uncomfortable" = "#cccccc",
+      "Somewhat comfortable"    = "#91bfdb",
+      "Extremely comfortable"   = "#4575b4"
+    ),
+    name = NULL,
+    breaks = comfort_levels
+  ) +
+  scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
+                     expand = expansion(mult = c(0.05, 0.15))) +
+  facet_wrap(~ factor(factor, levels = factors_to_show), ncol = 1) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        strip.text = element_text(size = 11, face = "bold"),
+        panel.grid.major.y = element_blank())
+```
+
+Comfort with race/ethnicity, country of origin, and ZIP or postal code as calculator factors, compared across self-reported ethnicity groups (multiple selections allowed). Respondents who selected multiple ethnicities are counted in each group they identified with. Ethnicity groups are ordered from least to most comfortable with race/ethnicity. Bars extend rightward for comfortable responses and leftward for uncomfortable responses, with neutral responses centred at zero. Net comfort is shown to the right of each bar.
+:::
+
+::: {#suppfig-ethnicity-comfort-factor}
+```{r}
+#| label: suppfig-ethnicity-comfort-factor
+#| fig-width: 10
+#| fig-height: 8
+
+comfort_df_eth <- responses |>
+  filter(!is.na(Ethnicity)) |>
+  select(Ethnicity, all_of(factor_vars)) |>
+  pivot_longer(cols = all_of(factor_vars), names_to = "factor_var", values_to = "comfort") |>
+  mutate(
+    factor = factor_labels[match(factor_var, factor_vars)],
+    comfort = factor(comfort, levels = comfort_levels)
+  ) |>
+  filter(!is.na(comfort), factor %in% factors_to_show) |>
+  select(-factor_var)
+
+comfort_summary_eth <- comfort_df_eth |>
+  count(Ethnicity, factor, comfort) |>
+  ungroup() |>
+  complete(Ethnicity, factor, comfort, fill = list(n = 0)) |>
+  filter(factor %in% factors_to_show) |>
+  group_by(Ethnicity, factor) |>
+  mutate(pct = n / sum(n) * 100) |>
+  ungroup()
+
+# Order ethnicity by net comfort with race/ethnicity
+eth_order <- comfort_summary_eth |>
+  filter(factor == "Race/ethnicity") |>
+  mutate(side = case_when(
+    comfort %in% c("Somewhat comfortable", "Extremely comfortable") ~ "pos",
+    comfort %in% c("Somewhat uncomfortable", "Extremely uncomfortable") ~ "neg",
+    TRUE ~ "neutral"
+  )) |>
+  group_by(Ethnicity) |>
+  summarise(net = sum(pct[side == "pos"]) - sum(pct[side == "neg"]), .groups = "drop") |>
+  arrange(desc(net)) |>
+  pull(Ethnicity)
+
+comfort_plot_eth <- comfort_summary_eth |>
+  mutate(Ethnicity = factor(Ethnicity, levels = eth_order)) |>
+  group_by(Ethnicity, factor) |>
+  mutate(
+    neutral_pct = pct[comfort == "Neither comfortable nor uncomfortable"],
+    xmin = case_when(
+      comfort == "Extremely uncomfortable" ~
+        -(pct[comfort == "Extremely uncomfortable"] +
+          pct[comfort == "Somewhat uncomfortable"] +
+          neutral_pct / 2),
+      comfort == "Somewhat uncomfortable" ~
+        -(pct[comfort == "Somewhat uncomfortable"] + neutral_pct / 2),
+      comfort == "Neither comfortable nor uncomfortable" ~ -(neutral_pct / 2),
+      comfort == "Somewhat comfortable" ~ neutral_pct / 2,
+      comfort == "Extremely comfortable" ~
+        neutral_pct / 2 + pct[comfort == "Somewhat comfortable"]
+    ),
+    xmax = xmin + pct
+  ) |>
+  ungroup()
+
+net_labels_eth <- comfort_plot_eth |>
+  group_by(Ethnicity, factor) |>
+  summarise(
+    net = sum(pct[comfort %in% c("Somewhat comfortable", "Extremely comfortable")]) -
+          sum(pct[comfort %in% c("Somewhat uncomfortable", "Extremely uncomfortable")]),
+    x_end = max(xmax),
+    .groups = "drop"
+  )
+
+ggplot(comfort_plot_eth, aes(y = Ethnicity, xmin = xmin, xmax = xmax, fill = comfort)) +
+  geom_rect(aes(ymin = as.numeric(Ethnicity) - 0.35,
+                ymax = as.numeric(Ethnicity) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = Ethnicity,
+                label = ifelse(abs(xmax - xmin) > 8, sprintf("%.0f%%", pct), "")),
+            size = 2.5) +
+  geom_text(data = net_labels_eth,
+            aes(x = x_end + 2, y = Ethnicity, label = sprintf("%+.0f%%", net)),
+            inherit.aes = FALSE, size = 3, hjust = 0) +
+  geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
+  scale_fill_manual(
+    values = c(
+      "Extremely uncomfortable" = "#d73027",
+      "Somewhat uncomfortable"  = "#fc8d59",
+      "Neither comfortable nor uncomfortable" = "#cccccc",
+      "Somewhat comfortable"    = "#91bfdb",
+      "Extremely comfortable"   = "#4575b4"
+    ),
+    name = NULL,
+    breaks = comfort_levels
+  ) +
+  scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
+                     expand = expansion(mult = c(0.05, 0.15))) +
+  facet_wrap(~ factor(factor, levels = factors_to_show), ncol = 1) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        strip.text = element_text(size = 11, face = "bold"),
+        panel.grid.major.y = element_blank())
+```
+
+Comfort with race/ethnicity, country of origin, and ZIP or postal code as calculator factors, compared across ethnicity groups (Prolific platform categories). Ethnicity groups are ordered from least to most comfortable with race/ethnicity. Bars extend rightward for comfortable responses and leftward for uncomfortable responses, with neutral responses centred at zero. Net comfort is shown to the right of each bar.
+:::
+
+::: {#suppfig-never-use-by-ethnicity}
+```{r}
+#| label: suppfig-never-use-by-ethnicity
+#| fig-width: 10
+#| fig-height: 8
+
+make_never_use_diverging <- function(df, group_col) {
+  summary_df <- df |>
+    count(!!sym(group_col), response = `rep-diao_4`) |>
+    ungroup() |>
+    complete(!!sym(group_col), response = factor(likert_levels, levels = likert_levels),
+             fill = list(n = 0)) |>
+    group_by(!!sym(group_col)) |>
+    mutate(pct = n / sum(n) * 100) |>
+    ungroup()
+
+  # Order by net agreement
+  grp_order <- summary_df |>
+    mutate(side = case_when(
+      response %in% c("Somewhat agree", "Strongly agree") ~ "pos",
+      response %in% c("Somewhat disagree", "Strongly disagree") ~ "neg",
+      TRUE ~ "neutral"
+    )) |>
+    group_by(!!sym(group_col)) |>
+    summarise(net = sum(pct[side == "pos"]) - sum(pct[side == "neg"]), .groups = "drop") |>
+    arrange(desc(net)) |>
+    pull(!!sym(group_col))
+
+  plot_df <- summary_df |>
+    mutate(!!group_col := factor(!!sym(group_col), levels = grp_order),
+           response = factor(response, levels = likert_levels)) |>
+    group_by(!!sym(group_col)) |>
+    mutate(
+      neutral_pct = pct[response == "Neither agree nor disagree"],
+      xmin = case_when(
+        response == "Strongly disagree" ~
+          -(pct[response == "Strongly disagree"] +
+            pct[response == "Somewhat disagree"] +
+            neutral_pct / 2),
+        response == "Somewhat disagree" ~
+          -(pct[response == "Somewhat disagree"] + neutral_pct / 2),
+        response == "Neither agree nor disagree" ~ -(neutral_pct / 2),
+        response == "Somewhat agree" ~ neutral_pct / 2,
+        response == "Strongly agree" ~
+          neutral_pct / 2 + pct[response == "Somewhat agree"]
+      ),
+      xmax = xmin + pct
+    ) |>
+    ungroup()
+
+  net_labels <- plot_df |>
+    group_by(!!sym(group_col)) |>
+    summarise(
+      net = sum(pct[response %in% c("Somewhat agree", "Strongly agree")]) -
+            sum(pct[response %in% c("Somewhat disagree", "Strongly disagree")]),
+      x_end = max(xmax),
+      .groups = "drop"
+    )
+
+  ggplot(plot_df, aes(y = !!sym(group_col), xmin = xmin, xmax = xmax, fill = response)) +
+    geom_rect(aes(ymin = as.numeric(!!sym(group_col)) - 0.35,
+                  ymax = as.numeric(!!sym(group_col)) + 0.35)) +
+    geom_text(aes(x = (xmin + xmax) / 2, y = !!sym(group_col),
+                  label = ifelse(abs(xmax - xmin) > 8, sprintf("%.1f%%", pct), "")),
+              size = 2.5) +
+    geom_text(data = net_labels,
+              aes(x = x_end + 2, y = !!sym(group_col), label = sprintf("%+.1f%%", net)),
+              inherit.aes = FALSE, size = 3, hjust = 0) +
+    geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
+    scale_fill_manual(
+      values = c(
+        "Strongly disagree" = "#d73027",
+        "Somewhat disagree" = "#fc8d59",
+        "Neither agree nor disagree" = "#fee090",
+        "Somewhat agree" = "#91bfdb",
+        "Strongly agree" = "#4575b4"
+      ),
+      name = NULL,
+      breaks = likert_levels
+    ) +
+    scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
+                       expand = expansion(mult = c(0.05, 0.15))) +
+    labs(x = NULL, y = NULL) +
+    theme_minimal() +
+    theme(panel.grid.major.y = element_blank())
+}
+
+# --- Panel A: by self-reported ethnicity (multi-select) ---
+never_use_selfeth_df <- responses |>
+  filter(!is.na(`demo-ethnicity`), !is.na(`rep-diao_4`)) |>
+  select(`demo-ethnicity`, `rep-diao_4`) |>
+  rowwise() |>
+  mutate(eth_list = list(names(ethnicity_categories)[
+    sapply(ethnicity_categories, \(pat) str_detect(`demo-ethnicity`, pat))
+  ])) |>
+  ungroup() |>
+  unnest(eth_list) |>
+  rename(SelfEthnicity = eth_list) |>
+  select(SelfEthnicity, `rep-diao_4`)
+
+p_never_self <- make_never_use_diverging(never_use_selfeth_df, "SelfEthnicity") +
+  labs(subtitle = "By self-reported ethnicity (multiple selections allowed)") +
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme(legend.position = "top", legend.text = element_text(size = 8))
+
+# --- Panel B: by Prolific ethnicity ---
+never_use_prolific_df <- responses |>
+  filter(!is.na(Ethnicity), !is.na(`rep-diao_4`)) |>
+  select(Ethnicity, `rep-diao_4`)
+
+p_never_prolific <- make_never_use_diverging(never_use_prolific_df, "Ethnicity") +
+  labs(subtitle = "By Prolific ethnicity") +
+  theme(legend.position = "none")
+
+library(patchwork)
+p_never_self / p_never_prolific
+```
+
+Agreement with the statement that doctors should never use race or ethnicity in clinical algorithms, by self-reported ethnicity (top, multiple selections allowed) and Prolific platform ethnicity (bottom). Bars extend rightward for agreement and leftward for disagreement, with neutral responses centred at zero. Net agreement is shown to the right of each bar.
+:::
+
+::: {#suppfig-country-comfort-factor}
+```{r}
+#| label: suppfig-country-comfort-factor
+#| fig-width: 10
+#| fig-height: 10
+
+# Keep countries with at least 20 respondents
+min_n_country <- 20
+
+country_counts <- responses |>
+  filter(!is.na(`Country of residence`)) |>
+  count(`Country of residence`) |>
+  filter(n >= min_n_country)
+
+comfort_df_country <- responses |>
+  filter(`Country of residence` %in% country_counts$`Country of residence`) |>
+  select(`Country of residence`, all_of(factor_vars)) |>
+  pivot_longer(cols = all_of(factor_vars), names_to = "factor_var", values_to = "comfort") |>
+  mutate(
+    factor = factor_labels[match(factor_var, factor_vars)],
+    comfort = factor(comfort, levels = comfort_levels)
+  ) |>
+  filter(!is.na(comfort), factor %in% factors_to_show) |>
+  select(-factor_var)
+
+comfort_summary_country <- comfort_df_country |>
+  count(`Country of residence`, factor, comfort) |>
+  ungroup() |>
+  complete(`Country of residence`, factor, comfort, fill = list(n = 0)) |>
+  filter(factor %in% factors_to_show) |>
+  group_by(`Country of residence`, factor) |>
+  mutate(pct = n / sum(n) * 100) |>
+  ungroup()
+
+# Order by net comfort with race/ethnicity
+country_order <- comfort_summary_country |>
+  filter(factor == "Race/ethnicity") |>
+  mutate(side = case_when(
+    comfort %in% c("Somewhat comfortable", "Extremely comfortable") ~ "pos",
+    comfort %in% c("Somewhat uncomfortable", "Extremely uncomfortable") ~ "neg",
+    TRUE ~ "neutral"
+  )) |>
+  group_by(`Country of residence`) |>
+  summarise(net = sum(pct[side == "pos"]) - sum(pct[side == "neg"]), .groups = "drop") |>
+  arrange(desc(net)) |>
+  pull(`Country of residence`)
+
+comfort_plot_country <- comfort_summary_country |>
+  mutate(`Country of residence` = factor(`Country of residence`, levels = country_order)) |>
+  group_by(`Country of residence`, factor) |>
+  mutate(
+    neutral_pct = pct[comfort == "Neither comfortable nor uncomfortable"],
+    xmin = case_when(
+      comfort == "Extremely uncomfortable" ~
+        -(pct[comfort == "Extremely uncomfortable"] +
+          pct[comfort == "Somewhat uncomfortable"] +
+          neutral_pct / 2),
+      comfort == "Somewhat uncomfortable" ~
+        -(pct[comfort == "Somewhat uncomfortable"] + neutral_pct / 2),
+      comfort == "Neither comfortable nor uncomfortable" ~ -(neutral_pct / 2),
+      comfort == "Somewhat comfortable" ~ neutral_pct / 2,
+      comfort == "Extremely comfortable" ~
+        neutral_pct / 2 + pct[comfort == "Somewhat comfortable"]
+    ),
+    xmax = xmin + pct
+  ) |>
+  ungroup()
+
+net_labels_country <- comfort_plot_country |>
+  group_by(`Country of residence`, factor) |>
+  summarise(
+    net = sum(pct[comfort %in% c("Somewhat comfortable", "Extremely comfortable")]) -
+          sum(pct[comfort %in% c("Somewhat uncomfortable", "Extremely uncomfortable")]),
+    x_end = max(xmax),
+    .groups = "drop"
+  )
+
+ggplot(comfort_plot_country, aes(y = `Country of residence`, xmin = xmin, xmax = xmax, fill = comfort)) +
+  geom_rect(aes(ymin = as.numeric(`Country of residence`) - 0.35,
+                ymax = as.numeric(`Country of residence`) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = `Country of residence`,
+                label = ifelse(abs(xmax - xmin) > 8, sprintf("%.0f%%", pct), "")),
+            size = 2.5) +
+  geom_text(data = net_labels_country,
+            aes(x = x_end + 2, y = `Country of residence`, label = sprintf("%+.0f%%", net)),
+            inherit.aes = FALSE, size = 3, hjust = 0) +
+  geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
+  scale_fill_manual(
+    values = c(
+      "Extremely uncomfortable" = "#d73027",
+      "Somewhat uncomfortable"  = "#fc8d59",
+      "Neither comfortable nor uncomfortable" = "#cccccc",
+      "Somewhat comfortable"    = "#91bfdb",
+      "Extremely comfortable"   = "#4575b4"
+    ),
+    name = NULL,
+    breaks = comfort_levels
+  ) +
+  scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
+                     expand = expansion(mult = c(0.05, 0.15))) +
+  facet_wrap(~ factor(factor, levels = factors_to_show), ncol = 1) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        strip.text = element_text(size = 11, face = "bold"),
+        panel.grid.major.y = element_blank())
+```
+
+Comfort with race/ethnicity, country of origin, and ZIP or postal code as calculator factors, compared across countries of residence (countries with at least 20 respondents). Countries are ordered from least to most comfortable with race/ethnicity. Bars extend rightward for comfortable responses and leftward for uncomfortable responses, with neutral responses centred at zero. Net comfort is shown to the right of each bar.
+:::
+
+## Race or Ethnicity Questions During Healthcare Encounters by Ethnicity and Country of Residence {#sec-healthcare-encounters .appendix}
+
+::: {#suppfig-how-often-by-ethnicity}
+```{r}
+#| label: suppfig-how-often-by-ethnicity
+#| fig-width: 10
+#| fig-height: 8
+
+how_often_levels <- c("Never", "Sometimes", "About half the time", "Most of the time", "Always")
+how_often_colors <- c(
+  "Never"               = "#d73027",
+  "Sometimes"           = "#fc8d59",
+  "About half the time" = "#cccccc",
+  "Most of the time"    = "#91bfdb",
+  "Always"              = "#4575b4"
+)
+
+how_often_selfeth <- responses |>
+  filter(!is.na(`rep-how-often`), !is.na(`demo-ethnicity`)) |>
+  select(`demo-ethnicity`, `rep-how-often`) |>
+  rowwise() |>
+  mutate(eth_list = list(names(ethnicity_categories)[
+    sapply(ethnicity_categories, \(pat) str_detect(`demo-ethnicity`, pat))
+  ])) |>
+  ungroup() |>
+  unnest(eth_list) |>
+  rename(SelfEthnicity = eth_list)
+
+how_often_summary_selfeth <- how_often_selfeth |>
+  count(SelfEthnicity, response = `rep-how-often`) |>
+  complete(SelfEthnicity, response = how_often_levels, fill = list(n = 0)) |>
+  group_by(SelfEthnicity) |>
+  mutate(
+    pct = n / sum(n) * 100,
+    response = factor(response, levels = how_often_levels)
+  ) |>
+  ungroup()
+
+selfeth_order_howoften <- sort(unique(how_often_summary_selfeth$SelfEthnicity), decreasing = TRUE)
+
+how_often_plot_selfeth <- how_often_summary_selfeth |>
+  mutate(SelfEthnicity = factor(SelfEthnicity, levels = selfeth_order_howoften)) |>
+  group_by(SelfEthnicity) |>
+  arrange(response) |>
+  mutate(
+    xmax = pmin(cumsum(pct), 100),
+    xmin = xmax - pct
+  ) |>
+  ungroup()
+
+ggplot(how_often_plot_selfeth,
+       aes(y = SelfEthnicity, xmin = xmin, xmax = xmax, fill = response)) +
+  geom_rect(aes(ymin = as.numeric(SelfEthnicity) - 0.35,
+                ymax = as.numeric(SelfEthnicity) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = SelfEthnicity,
+                label = ifelse(abs(xmax - xmin) > 8, sprintf("%.0f%%", pct), "")),
+            size = 2.5) +
+  scale_fill_manual(values = how_often_colors, name = NULL, breaks = how_often_levels) +
+  scale_x_continuous(labels = \(x) paste0(x, "%"),
+                     limits = c(0, 100), breaks = seq(0, 100, 25)) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        panel.grid.major.y = element_blank())
+```
+
+How often respondents are asked about their race or ethnicity when seeking healthcare, by self-reported ethnicity (multiple selections allowed). Respondents who selected multiple ethnicities are counted in each group they identified with. Groups are ordered alphabetically.
+:::
+
+::: {#suppfig-how-often-by-country}
+```{r}
+#| label: suppfig-how-often-by-country
+#| fig-width: 10
+#| fig-height: 10
+
+how_often_country <- responses |>
+  filter(!is.na(`rep-how-often`),
+         `Country of residence` %in% country_counts$`Country of residence`) |>
+  select(`Country of residence`, `rep-how-often`)
+
+how_often_summary_country <- how_often_country |>
+  count(`Country of residence`, response = `rep-how-often`) |>
+  complete(`Country of residence`, response = how_often_levels, fill = list(n = 0)) |>
+  group_by(`Country of residence`) |>
+  mutate(
+    pct = n / sum(n) * 100,
+    response = factor(response, levels = how_often_levels)
+  ) |>
+  ungroup()
+
+country_order_howoften <- how_often_summary_country |>
+  filter(response == "Never") |>
+  arrange(desc(pct)) |>
+  pull(`Country of residence`)
+
+how_often_plot_country <- how_often_summary_country |>
+  mutate(`Country of residence` = factor(`Country of residence`,
+                                          levels = country_order_howoften)) |>
+  group_by(`Country of residence`) |>
+  arrange(response) |>
+  mutate(
+    xmax = pmin(cumsum(pct), 100),
+    xmin = xmax - pct
+  ) |>
+  ungroup()
+
+ggplot(how_often_plot_country,
+       aes(y = `Country of residence`, xmin = xmin, xmax = xmax, fill = response)) +
+  geom_rect(aes(ymin = as.numeric(`Country of residence`) - 0.35,
+                ymax = as.numeric(`Country of residence`) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = `Country of residence`,
+                label = ifelse(abs(xmax - xmin) > 8, sprintf("%.0f%%", pct), "")),
+            size = 2.5) +
+  scale_fill_manual(values = how_often_colors, name = NULL, breaks = how_often_levels) +
+  scale_x_continuous(labels = \(x) paste0(x, "%"),
+                     limits = c(0, 100), breaks = seq(0, 100, 25)) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        panel.grid.major.y = element_blank())
+```
+
+How often respondents are asked about their race or ethnicity when seeking healthcare, by country of residence (countries with at least 20 respondents). Countries are ordered from most to least frequently reporting "Never" being asked.
+:::
+
+::: {#suppfig-misclassify-by-ethnicity}
+```{r}
+#| label: suppfig-misclassify-by-ethnicity
+#| fig-width: 10
+#| fig-height: 8
+
+misclassify_levels <- c("Yes (misclassified)", "Yes (matched)", "Not sure", "No")
+misclassify_colors <- c(
+  "Yes (misclassified)" = "#d73027",
+  "Yes (matched)"       = "#fc8d59",
+  "Not sure"            = "#cccccc",
+  "No"                  = "#4575b4"
+)
+
+recode_misclassify <- function(x) case_when(
+  x == "Yes, and it did not match my own choice" ~ "Yes (misclassified)",
+  x == "Yes, and it matched my own choice"       ~ "Yes (matched)",
+  TRUE ~ x
+)
+
+misclassify_selfeth <- responses |>
+  filter(!is.na(`rep-misclassify`), !is.na(`demo-ethnicity`)) |>
+  select(`demo-ethnicity`, `rep-misclassify`) |>
+  rowwise() |>
+  mutate(eth_list = list(names(ethnicity_categories)[
+    sapply(ethnicity_categories, \(pat) str_detect(`demo-ethnicity`, pat))
+  ])) |>
+  ungroup() |>
+  unnest(eth_list) |>
+  rename(SelfEthnicity = eth_list)
+
+misclassify_summary_selfeth <- misclassify_selfeth |>
+  mutate(response = recode_misclassify(`rep-misclassify`)) |>
+  count(SelfEthnicity, response) |>
+  complete(SelfEthnicity, response = misclassify_levels, fill = list(n = 0)) |>
+  group_by(SelfEthnicity) |>
+  mutate(
+    pct = n / sum(n) * 100,
+    response = factor(response, levels = misclassify_levels)
+  ) |>
+  ungroup()
+
+selfeth_order_misclassify <- misclassify_summary_selfeth |>
+  filter(response %in% c("Yes (misclassified)", "Yes (matched)")) |>
+  group_by(SelfEthnicity) |>
+  summarise(pct_yes = sum(pct), .groups = "drop") |>
+  arrange(pct_yes) |>
+  pull(SelfEthnicity)
+
+pct_yes_selfeth <- misclassify_summary_selfeth |>
+  filter(response %in% c("Yes (misclassified)", "Yes (matched)")) |>
+  group_by(SelfEthnicity) |>
+  summarise(pct_yes = sum(pct), .groups = "drop")
+
+misclassify_plot_selfeth <- misclassify_summary_selfeth |>
+  mutate(SelfEthnicity = factor(SelfEthnicity, levels = selfeth_order_misclassify)) |>
+  group_by(SelfEthnicity) |>
+  arrange(response) |>
+  mutate(
+    xmax = pmin(cumsum(pct), 100),
+    xmin = xmax - pct
+  ) |>
+  ungroup()
+
+ggplot(misclassify_plot_selfeth,
+       aes(y = SelfEthnicity, xmin = xmin, xmax = xmax, fill = response)) +
+  geom_rect(aes(ymin = as.numeric(SelfEthnicity) - 0.35,
+                ymax = as.numeric(SelfEthnicity) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = SelfEthnicity,
+                label = ifelse(abs(xmax - xmin) > 8, sprintf("%.0f%%", pct), "")),
+            size = 2.5) +
+  geom_text(data = pct_yes_selfeth,
+            aes(x = 102, y = SelfEthnicity, label = sprintf("%.0f%%", pct_yes)),
+            inherit.aes = FALSE, size = 3, hjust = 0) +
+  scale_fill_manual(values = misclassify_colors, name = NULL,
+                    breaks = misclassify_levels) +
+  scale_x_continuous(labels = \(x) paste0(x, "%"),
+                     limits = c(0, 115), breaks = seq(0, 100, 25)) +
+  labs(x = NULL, y = NULL, caption = "% to the right of bars = total % Yes") +
+  theme_minimal() +
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        plot.caption = element_text(size = 8, hjust = 1),
+        panel.grid.major.y = element_blank())
+```
+
+Proportion of respondents who reported that a doctor, nurse, or clinic staff filled out their race or ethnicity on a form or computer screen without asking them, by self-reported ethnicity (multiple selections allowed). "Yes (matched)" indicates the staff's classification matched the respondent's own choice; "Yes (misclassified)" indicates it did not. Respondents who selected multiple ethnicities are counted in each group they identified with. Groups are ordered from lowest to highest total proportion answering "Yes". The total % Yes is shown to the right of each bar.
+:::
+
+::: {#suppfig-misclassify-by-country}
+```{r}
+#| label: suppfig-misclassify-by-country
+#| fig-width: 10
+#| fig-height: 10
+
+misclassify_country <- responses |>
+  filter(!is.na(`rep-misclassify`),
+         `Country of residence` %in% country_counts$`Country of residence`) |>
+  select(`Country of residence`, `rep-misclassify`)
+
+misclassify_summary_country <- misclassify_country |>
+  mutate(response = recode_misclassify(`rep-misclassify`)) |>
+  count(`Country of residence`, response) |>
+  complete(`Country of residence`, response = misclassify_levels, fill = list(n = 0)) |>
+  group_by(`Country of residence`) |>
+  mutate(
+    pct = n / sum(n) * 100,
+    response = factor(response, levels = misclassify_levels)
+  ) |>
+  ungroup()
+
+country_order_misclassify <- misclassify_summary_country |>
+  filter(response %in% c("Yes (misclassified)", "Yes (matched)")) |>
+  group_by(`Country of residence`) |>
+  summarise(pct_yes = sum(pct), .groups = "drop") |>
+  arrange(pct_yes) |>
+  pull(`Country of residence`)
+
+pct_yes_country <- misclassify_summary_country |>
+  filter(response %in% c("Yes (misclassified)", "Yes (matched)")) |>
+  group_by(`Country of residence`) |>
+  summarise(pct_yes = sum(pct), .groups = "drop")
+
+misclassify_plot_country <- misclassify_summary_country |>
+  mutate(`Country of residence` = factor(`Country of residence`,
+                                          levels = country_order_misclassify)) |>
+  group_by(`Country of residence`) |>
+  arrange(response) |>
+  mutate(
+    xmax = pmin(cumsum(pct), 100),
+    xmin = xmax - pct
+  ) |>
+  ungroup()
+
+ggplot(misclassify_plot_country,
+       aes(y = `Country of residence`, xmin = xmin, xmax = xmax, fill = response)) +
+  geom_rect(aes(ymin = as.numeric(`Country of residence`) - 0.35,
+                ymax = as.numeric(`Country of residence`) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = `Country of residence`,
+                label = ifelse(abs(xmax - xmin) > 8, sprintf("%.0f%%", pct), "")),
+            size = 2.5) +
+  geom_text(data = pct_yes_country,
+            aes(x = 102, y = `Country of residence`, label = sprintf("%.0f%%", pct_yes)),
+            inherit.aes = FALSE, size = 3, hjust = 0) +
+  scale_fill_manual(values = misclassify_colors, name = NULL,
+                    breaks = misclassify_levels) +
+  scale_x_continuous(labels = \(x) paste0(x, "%"),
+                     limits = c(0, 115), breaks = seq(0, 100, 25)) +
+  labs(x = NULL, y = NULL, caption = "% to the right of bars = total % Yes") +
+  theme_minimal() +
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        plot.caption = element_text(size = 8, hjust = 1),
+        panel.grid.major.y = element_blank())
+```
+
+Proportion of respondents who reported that a doctor, nurse, or clinic staff filled out their race or ethnicity on a form or computer screen without asking them, by country of residence (countries with at least 20 respondents). "Yes (matched)" indicates the staff's classification matched the respondent's own choice; "Yes (misclassified)" indicates it did not. Countries are ordered from lowest to highest total proportion answering "Yes". The total % Yes is shown to the right of each bar.
+:::
+
+## Comparison with Representative US Surveys {#sec-replication .appendix}
+
+To measure potential bias in our multinational convenience sample, we replicated two questions from representative US surveys. The question "In health and medicine, how much of a problem is bias and unfair treatment based on patients' race or ethnicity?" was adapted from the Pew Research Center, and "In general, do you think you would receive better or worse care from doctors or health care providers who share your racial and ethnic background, or would it not make much difference?" was adapted from the Kaiser Family Foundation (KFF). @suppfig-rep-bias and @suppfig-rep-concordance compare our overall and US-resident survey responses to the representative US samples.
+
+::: {#suppfig-rep-bias}
+```{r}
+#| label: suppfig-rep-bias
+#| fig-width: 9
+#| fig-height: 5
+
+pew_bias <- tibble(
+  response = c("Not a problem", "A minor problem", "A major problem"),
+  pct = c(28, 35, 35),
+  source = "Pew Research Center"
+)
+
+our_bias_all <- responses |>
+  filter(!is.na(`rep-bias-problem`), `rep-bias-problem` != "Unsure") |>
+  count(`rep-bias-problem`) |>
+  mutate(
+    pct = n / sum(n) * 100,
+    response = `rep-bias-problem`,
+    source = "Our survey (all)"
+  ) |>
+  select(response, pct, source)
+
+our_bias_us <- responses |>
+  filter(`Country of residence` == "United States",
+         !is.na(`rep-bias-problem`), `rep-bias-problem` != "Unsure") |>
+  count(`rep-bias-problem`) |>
+  mutate(
+    pct = n / sum(n) * 100,
+    response = `rep-bias-problem`,
+    source = "Our survey (US residents)"
+  ) |>
+  select(response, pct, source)
+
+source_levels <- c("Pew Research Center", "Our survey (all)", "Our survey (US residents)")
+
+bias_comparison <- bind_rows(pew_bias, our_bias_all, our_bias_us) |>
+  mutate(
+    response = factor(response, levels = c("Not a problem", "A minor problem", "A major problem")),
+    source = factor(source, levels = source_levels)
+  )
+
+ggplot(bias_comparison, aes(x = response, y = pct, fill = source)) +
+  geom_col(position = position_dodge(width = 0.75), width = 0.7) +
+  geom_text(aes(label = sprintf("%.1f%%", pct)),
+            position = position_dodge(width = 0.75), vjust = -0.3, size = 3.2) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)), limits = c(0, NA)) +
+  scale_fill_manual(values = c("Pew Research Center" = "#91bfdb", "Our survey (all)" = "#4575b4", "Our survey (US residents)" = "#2a4d6e"), name = NULL) +
+  labs(x = NULL, y = "Percentage (%)") +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+
+Comparison of responses to "In health and medicine, how much of a problem is bias and unfair treatment based on patients' race or ethnicity?" between our survey (all respondents and US residents only) and a representative US sample from the Pew Research Center. Respondents who answered "Unsure" in our survey were excluded from this comparison as this option was not offered in the Pew survey.
+:::
+
+::: {#suppfig-rep-concordance}
+```{r}
+#| label: suppfig-rep-concordance
+#| fig-width: 9
+#| fig-height: 5
+
+kff_concord <- tibble(
+  response = c("Receive better care", "No difference", "Receive worse care"),
+  pct = c(25, 71, 3),
+  source = "Kaiser Family Foundation"
+)
+
+recode_concord <- c(
+  "Would receive better care" = "Receive better care",
+  "Wouldn't make much difference" = "No difference",
+  "Would receive worse care" = "Receive worse care"
+)
+
+our_concord_all <- responses |>
+  filter(!is.na(`rep-dr-concord`)) |>
+  count(`rep-dr-concord`) |>
+  mutate(
+    pct = n / sum(n) * 100,
+    response = recode(`rep-dr-concord`, !!!recode_concord),
+    source = "Our survey (all)"
+  ) |>
+  select(response, pct, source)
+
+our_concord_us <- responses |>
+  filter(`Country of residence` == "United States",
+         !is.na(`rep-dr-concord`)) |>
+  count(`rep-dr-concord`) |>
+  mutate(
+    pct = n / sum(n) * 100,
+    response = recode(`rep-dr-concord`, !!!recode_concord),
+    source = "Our survey (US residents)"
+  ) |>
+  select(response, pct, source)
+
+source_levels <- c("Kaiser Family Foundation", "Our survey (all)", "Our survey (US residents)")
+
+concord_comparison <- bind_rows(kff_concord, our_concord_all, our_concord_us) |>
+  mutate(
+    response = factor(response, levels = c("Receive better care", "No difference", "Receive worse care")),
+    source = factor(source, levels = source_levels)
+  )
+
+ggplot(concord_comparison, aes(x = response, y = pct, fill = source)) +
+  geom_col(position = position_dodge(width = 0.75), width = 0.7) +
+  geom_text(aes(label = sprintf("%.0f%%", pct)),
+            position = position_dodge(width = 0.75), vjust = -0.3, size = 3.2) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)), limits = c(0, NA)) +
+  scale_fill_manual(values = c("Kaiser Family Foundation" = "#91bfdb", "Our survey (all)" = "#4575b4", "Our survey (US residents)" = "#2a4d6e"), name = NULL) +
+  labs(x = NULL, y = "Percentage (%)") +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+
+Comparison of responses to "Do you think you would receive better or worse care from doctors or health care providers who share your racial and ethnic background, or would it not make much difference?" between our survey (all respondents and US residents only) and a representative US sample from the Kaiser Family Foundation (KFF).
+:::
+
+We also replicated questions from Diao et al., who surveyed a representative US sample on comfort with the use of demographic factors in a cancer risk calculator and attitudes toward the use of race in clinical care. @suppfig-rep-diao-comfort compares comfort with overlapping factors (age, sex, race, and ZIP/postal code), @suppfig-rep-diao-agreement compares agreement with four statements about using race in clinical care.
+
+::: {#suppfig-rep-diao-comfort}
+```{r}
+#| label: suppfig-rep-diao-comfort
+#| fig-width: 10
+#| fig-height: 8
+
+# Diao et al. data from figure-2a (collapsed 3-level)
+diao_comfort <- tibble(
+  factor = rep(c("Age", "Sex/Biological sex", "Race/ethnicity", "ZIP/Postal Code"), each = 3),
+  level = rep(c("Extremely or Somewhat\nUncomfortable", "Neither", "Extremely or Somewhat\nComfortable"), 4),
+  pct = c(6.5, 13.7, 79.8,   6.8, 14.5, 78.8,   8.8, 16.5, 74.6,   22.3, 23.4, 54.3),
+  source = "Diao et al."
+)
+
+comparable_factors <- c("fd-factors_1" = "Age",
+                        "fd-factors_2" = "Sex/Biological sex",
+                        "fd-factors_3" = "Race/ethnicity",
+                        "fd-factors_4" = "ZIP/Postal Code")
+
+collapse_comfort <- function(x) {
+  case_when(
+    x %in% c("Extremely uncomfortable", "Somewhat uncomfortable") ~ "Extremely or Somewhat\nUncomfortable",
+    x == "Neither comfortable nor uncomfortable" ~ "Neither",
+    x %in% c("Somewhat comfortable", "Extremely comfortable") ~ "Extremely or Somewhat\nComfortable"
+  )
+}
+
+calc_comfort_pcts <- function(df, src_label) {
+  df |>
+    select(all_of(names(comparable_factors))) |>
+    setNames(comparable_factors) |>
+    pivot_longer(everything(), names_to = "factor", values_to = "comfort") |>
+    filter(!is.na(comfort)) |>
+    mutate(level = collapse_comfort(comfort)) |>
+    count(factor, level) |>
+    group_by(factor) |>
+    mutate(pct = n / sum(n) * 100) |>
+    ungroup() |>
+    mutate(source = src_label) |>
+    select(factor, level, pct, source)
+}
+
+our_comfort_all <- calc_comfort_pcts(responses, "Our survey (all)")
+our_comfort_us <- calc_comfort_pcts(
+  responses |> filter(`Country of residence` == "United States"),
+  "Our survey (US residents)"
+)
+
+collapsed_levels <- c("Extremely or Somewhat\nUncomfortable", "Neither", "Extremely or Somewhat\nComfortable")
+source_levels <- c("Diao et al.", "Our survey (all)", "Our survey (US residents)")
+factor_order <- c("Age", "Sex/Biological sex", "Race/ethnicity", "ZIP/Postal Code")
+
+comfort_comparison <- bind_rows(diao_comfort, our_comfort_all, our_comfort_us) |>
+  mutate(
+    level = factor(level, levels = collapsed_levels),
+    source = factor(source, levels = source_levels),
+    factor = factor(factor, levels = factor_order)
+  )
+
+# Build diverging positions: uncomfortable left, neither centred, comfortable right
+comfort_plot <- comfort_comparison |>
+  group_by(factor, source) |>
+  mutate(
+    neutral_pct = pct[level == "Neither"],
+    xmin = case_when(
+      level == "Extremely or Somewhat\nUncomfortable" ~ -(pct + neutral_pct / 2),
+      level == "Neither" ~ -(neutral_pct / 2),
+      level == "Extremely or Somewhat\nComfortable" ~ neutral_pct / 2
+    ),
+    xmax = xmin + pct
+  ) |>
+  ungroup()
+
+net_labels <- comfort_plot |>
+  group_by(factor, source) |>
+  summarise(
+    net = pct[level == "Extremely or Somewhat\nComfortable"] - pct[level == "Extremely or Somewhat\nUncomfortable"],
+    x_end = max(xmax),
+    .groups = "drop"
+  )
+
+ggplot(comfort_plot, aes(y = source, xmin = xmin, xmax = xmax, fill = level)) +
+  geom_rect(aes(ymin = as.numeric(source) - 0.35,
+                ymax = as.numeric(source) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = source,
+                label = ifelse(abs(xmax - xmin) > 5, sprintf("%.1f%%", pct), "")),
+            size = 3) +
+  geom_text(data = net_labels,
+            aes(x = x_end + 2, y = source, label = sprintf("%+.1f%%", net)),
+            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+  geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
+  scale_fill_manual(
+    values = c("Extremely or Somewhat\nUncomfortable" = "#d73027", "Neither" = "#cccccc", "Extremely or Somewhat\nComfortable" = "#4575b4"),
+    name = NULL,
+    breaks = collapsed_levels
+  ) +
+  scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
+                     expand = expansion(mult = c(0.05, 0.12))) +
+  facet_wrap(~ factor, ncol = 1) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  theme(legend.position = "top",
+        strip.text = element_text(face = "bold"),
+        panel.grid.major.y = element_blank())
+```
+
+Comparison of comfort with the use of demographic factors in a hypothetical risk calculator between our survey (all respondents and US residents only) and a representative US sample from Diao et al. Bars extend rightward for comfortable responses (blue) and leftward for uncomfortable responses (red), with neutral responses (grey) centred at zero. Net comfort is shown to the right of each bar. Responses were collapsed into three categories to match the reporting in Diao et al.
+:::
+
+::: {#suppfig-rep-diao-agreement}
+```{r}
+#| label: suppfig-rep-diao-agreement
+#| fig-width: 10
+#| fig-height: 9
+
+# Diao et al. data from figure-2b (collapsed 3-level)
+diao_agree <- tibble(
+  statement = rep(c(
+    "...as long as my doctor believes\nit is best for my care",
+    "...as long as they talk to me\nabout how and why they are using it",
+    "...as long as it is recommended\nby practice guidelines",
+    "There are no circumstances under\nwhich a doctor should use my race"
+  ), each = 3),
+  level = rep(c("Strongly or Somewhat\nDisagree", "Neither", "Strongly or Somewhat\nAgree"), 4),
+  pct = c(9, 24, 67,   8, 21, 70,   10, 23, 68,   50, 28, 22),
+  source = "Diao et al."
+)
+
+diao_cols <- c("rep-diao_1", "rep-diao_2", "rep-diao_3", "rep-diao_4")
+diao_labels <- c(
+  "...as long as my doctor believes\nit is best for my care",
+  "...as long as they talk to me\nabout how and why they are using it",
+  "...as long as it is recommended\nby practice guidelines",
+  "There are no circumstances under\nwhich a doctor should use my race"
+)
+
+collapse_agree <- function(x) {
+  case_when(
+    x %in% c("Strongly disagree", "Somewhat disagree") ~ "Strongly or Somewhat\nDisagree",
+    x == "Neither agree nor disagree" ~ "Neither",
+    x %in% c("Somewhat agree", "Strongly agree") ~ "Strongly or Somewhat\nAgree"
+  )
+}
+
+calc_agree_pcts <- function(df, src_label) {
+  df |>
+    select(all_of(diao_cols)) |>
+    setNames(diao_labels) |>
+    pivot_longer(everything(), names_to = "statement", values_to = "response") |>
+    filter(!is.na(response)) |>
+    mutate(level = collapse_agree(response)) |>
+    count(statement, level) |>
+    group_by(statement) |>
+    mutate(pct = n / sum(n) * 100) |>
+    ungroup() |>
+    mutate(source = src_label) |>
+    select(statement, level, pct, source)
+}
+
+our_agree_all <- calc_agree_pcts(responses, "Our survey (all)")
+our_agree_us <- calc_agree_pcts(
+  responses |> filter(`Country of residence` == "United States"),
+  "Our survey (US residents)"
+)
+
+collapsed_levels <- c("Strongly or Somewhat\nDisagree", "Neither", "Strongly or Somewhat\nAgree")
+source_levels <- c("Diao et al.", "Our survey (all)", "Our survey (US residents)")
+
+agree_comparison <- bind_rows(diao_agree, our_agree_all, our_agree_us) |>
+  mutate(
+    level = factor(level, levels = collapsed_levels),
+    source = factor(source, levels = source_levels),
+    statement = factor(statement, levels = diao_labels)
+  )
+
+# Build diverging positions: disagree left, neither centred, agree right
+agree_plot <- agree_comparison |>
+  group_by(statement, source) |>
+  mutate(
+    neutral_pct = pct[level == "Neither"],
+    xmin = case_when(
+      level == "Strongly or Somewhat\nDisagree" ~ -(pct + neutral_pct / 2),
+      level == "Neither" ~ -(neutral_pct / 2),
+      level == "Strongly or Somewhat\nAgree" ~ neutral_pct / 2
+    ),
+    xmax = xmin + pct
+  ) |>
+  ungroup()
+
+net_labels <- agree_plot |>
+  group_by(statement, source) |>
+  summarise(
+    net = pct[level == "Strongly or Somewhat\nAgree"] - pct[level == "Strongly or Somewhat\nDisagree"],
+    x_end = max(xmax),
+    .groups = "drop"
+  )
+
+ggplot(agree_plot, aes(y = source, xmin = xmin, xmax = xmax, fill = level)) +
+  geom_rect(aes(ymin = as.numeric(source) - 0.35,
+                ymax = as.numeric(source) + 0.35)) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = source,
+                label = ifelse(abs(xmax - xmin) > 5, sprintf("%.1f%%", pct), "")),
+            size = 3) +
+  geom_text(data = net_labels,
+            aes(x = x_end + 2, y = source, label = sprintf("%+.1f%%", net)),
+            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+  geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
+  scale_fill_manual(
+    values = c("Strongly or Somewhat\nDisagree" = "#d73027", "Neither" = "#cccccc", "Strongly or Somewhat\nAgree" = "#4575b4"),
+    name = NULL,
+    breaks = collapsed_levels
+  ) +
+  scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
+                     expand = expansion(mult = c(0.05, 0.12))) +
+  facet_wrap(~ statement, ncol = 1) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  theme(legend.position = "top",
+        strip.text = element_text(face = "bold", size = 9),
+        panel.grid.major.y = element_blank())
+```
+
+Comparison of agreement with statements about the use of race or ethnicity in clinical care between our survey (all respondents and US residents only) and a representative US sample from Diao et al. The first three statements are prefixed with "I am comfortable with my doctor using my race or ethnicity in clinical care..." Bars extend rightward for agreement (blue) and leftward for disagreement (red), with neutral responses (grey) centred at zero. Net agreement is shown to the right of each bar. Responses were collapsed into three categories to match the reporting in Diao et al.
+:::
+
+## Qualitative Codebooks {#sec-codebooks .appendix}
+
+The codebooks below were developed via conventional content analysis of three open-ended survey questions. Two reviewers independently developed and iteratively refined a shared codebook through open coding, then independently applied the codebook to 10% of responses to ensure consistency. Discrepancies were resolved through discussion and consensus, and the remaining responses were coded by one reviewer using the final codebook.
+
+::: {#supptab-codebook-race}
+|  |  |  |
+|:-----------------:|:----------------------------:|:---------------------:|
+| Category | Description | Example(s) |
+| Physical traits | Responses referring to physical traits or characteristics, such as skin colour. | *"Colour of your skin"*; *"Race or ethnicity distinguishes people based on complexion. When a person appears darker, they are black"* |
+| Ancestry, heritage or lineage | References to ancestry, heritage, or lineage, including where one's ancestors are from. | *"Race or ethnicity refers to ones \[one's\] heritage and bloodline"*; *"To me ethnicity mean\[s\] what region of the world did your ancestors immigrate from"* |
+| Cultural or historical background | References to culture, including cultural background or shared culture, as well as historical background or context. | *"A characterization of people based on having a shared culture"*; *"Your history, what makes you who you are"*; *"It means shared history and culture that shape how people are seen"* |
+| Biology or genetics | Responses referring to biology, biological characteristics, genes, DNA, or genetic background/characteristics/makeup. | *"Race or ethnicity means my genetic makeup, not where I was born or raised"*; *"Its \[it is\] biological form of identity"* |
+| Place of origin | Individual or familial origin or place of origin, including references to the geographical location where one was born and raised. | *"To me its \[it is\] just a way to identify where a person has come from in the world"*; *"Is \[it\] means where your family originated from"* |
+| Self-identity | Responses referring to the way an individual identifies themselves. | *"It is what I identify as, and it's who I am as a person"* |
+| Community and belonging | Reference to belonging to a community or a group of people. | *"A group someone belongs to"*; *"To belong in a human social group"* |
+| Social construct | Referred to race and/or ethnicity as a social construct. | *"Social constructs used to categorize human diversity based on different criteria"* |
+| Distinguishes between race and ethnicity | Race and ethnicity were defined and acknowledged as separate concepts. | *"Race means your colour but ethnicity is where you're from"*; *"Race is about physical traits, ethnicity is about cultural identity"* |
+| Critique or rejection of race | Responses that explicitly questioned, critiqued, or rejected the concept of race by describing it as meaningless, outdated, or harmful. | *"Race means nothing to me because I don't believe in separate races. There is only one race... Human"*; *"It is an outdated term that continues to be used to group people (often in a discriminatory way)";* |
+| Medical relevance | Responses describing race and/or ethnicity with respect to medical or clinical relevance or considerations. | *"My kind of body and maybe some sickness that maybe I have"* |
+
+Codebook for the open-ended question, "In your own words, what does 'race or ethnicity' mean to you? There are no right or wrong answers — we are interested in your personal perspective."
+:::
+
+::: {#supptab-codebook-racism}
+| Category | Description | Example(s) |
+|:-----------------------|:-----------------------|:-----------------------|
+| Longer wait time or low priority | References to receiving delayed care, such as having to wait longer or being assigned a lower priority. | *"Put to the back of the line, not treated with urgency"*; *"It's just that they prioritize white people even though we are the first in line"* |
+| Differential treatment | Responses referring to being treated or cared for differently, including experiences of poor tone or attitude, poorer quality of care, unfair treatment, racial categorization or profiling based on appearance, and provider knowledge gap that could result in differential access to care. | *"Race plays a big part in how you are treated as a patient here in Canada. There is differential care"*; *"I sometimes felt like quality or more accessible medical assistance were offered to people who had a different race than me"*; *"Took my son to the ER with an allergic reaction that had morphed to a full body rash in hours. We were told by the doctor she was not used to dark skin so couldn't identify what was happening"* |
+| Dismissive or neglectful behaviour | Stating that physicians or other providers dismissed, minimized, or did not listen to their concerns, as well as experiencing missed or delayed diagnosis or rushed consultation. | *"I have been to the hospital to have my 3 kids. I have felt 'looked over' and dismissed by the white doctors and had to strongly rebut and stand up for myself. I do feel it had to do with my race"*; *"The doctors (mid-wife) did not take my health concerns seriously and dismissed me"* |
+| Physiological assumption or stereotyping | Mentioned experiencing presumptions or stereotypes based on physiological or biological factors such as pain tolerance or different risk for certain diseases. | *"Some doctors think black people are more tolerant to pain"*; *"A doctor remarked the chances of a black person getting prostate cancer was higher compared to that of a white individual"* |
+| Social or behavioural assumption or stereotyping | Mentioned experiencing presumptions or stereotypes based on social or behavioural factors such as socioeconomic status, education level, lifestyle, or behaviour. | *"Certain medical staff just think because you aren't caucasian, that you are uneducated when it comes down to medical matters"* |
+| Explicit discrimination | Responses mentioning explicit verbal discrimination or racist comments. | *"I was living in a different country and I had to have a surgery and my surgeon kept making racist remarks that made me feel very uncomfortable. Same happened with another doctor who told my son off for speaking with an accent"* |
+| Expressed emotional discomfort | Expressed feelings or emotions about their experiences, such as discomfort or having difficulty talking about them. | *"Difficult to talk about these experiences sorry"* |
+
+Codebook for the open-ended question, "Have you ever felt that you were treated unfairly in the healthcare system because of your race or ethnicity?"
+:::
+
+::: {#supptab-codebook-reform}
+| Category | Description | Example(s) |
+|:-----------------------|:-----------------------|:-----------------------|
+| Unconditional acceptance | Responses that were positive towards using race and/or ethnicity and did not express any concerns or rejections. | *"It seems fair to consider race"*; *"I think racial classification in medicine has its own specific reasons, given the different living environments of various races, so I am perfectly comfortable with this distinction"* |
+| Trust in medical authority | Expressed trust in healthcare providers and researchers to make appropriate decisions about the use of race in clinical decisions, and/or willingness to comply with official recommendations. | *"I trust the doctor's suggestion because they are the experts and know more than I do"*; *"I'm not qualified in the medical field, so I'd prefer to leave it to my doctors. I don't mind, however, of the race, gender or any other trait is used in the statistical analysis; if there are actually some patterns, it's okay to use them for the benefit of the people in my opinion."* |
+| Conditional acceptance | Responses that were supportive of using race and/or ethnicity, but conditional to certain considerations (sub-categories below) being met. | *See subcategories below* |
+| — *If improves accuracy* | Willing to support the use of race and/or ethnicity if it improves accuracy in diagnosis or other aspects of care provision. | *"Statistically speaking, if there is data that show medical treatment would be better when race is considered, then I am fine considering race as part of the medical diagnosis"* |
+| — *Based on specific use case* | Willing to support the use of race and/or ethnicity under certain circumstances or for specific clinical applications. | *"As I am reading, I think it depends on the medical problem and when it can be helpful to reference race in medical questions"* |
+| — *Others* | Willing to accept the use of race and/or ethnicity under other considerations than the two mentioned above, such as if it improves fairness, if patients are able to make their own choice, or if patients are given more information at point of care. | *"If the race-specific option is actually better at making predictions, then that is the option I would want. Let the patient make the choice about whether they want to use the inferior or superior prediction calculator, after informing them of the concerns about each method. Make it informed consent. Don't dictate to them or hide from them the options."* |
+| Rejection | Responses that rejected using race and/or ethnicity, on the basis of the sub-categories presented below. | *See subcategories below* |
+| — *Preference for environmental or social determinants* | Responses referring to having a preference for using environmental or social determinants instead of race and/or ethnicity. | *"Race is a social construct. Any decisions made on race will be unreliable. The factors that mean the most would be environmental, air quality, water quality, education levels, nutritional intake, growth, activities, genetics, government regulations, housing, psychology, etc."* |
+| — *Preference for individualized assessments* | Responses referring to having a preference for individualized assessments or approaches instead of race and/or ethnicity. | *"I think each individual should receive fair attention and consideration that isn't focused on things like race, because a person may not fit into the average of their ethnic group"* |
+| — *Others* | Rejection of using race and/or ethnicity for other reasons than the two mentioned above, such as preference for using ethnicity over race, preference for using country over race, or general disagreement with the use of race. | *"specifically for blacks. I think ethnicity would be better than race. how does a black caribbean compare to a black american? do the values change? have the studies been done?"* |
+| Concerns about using race | Responses that did not reject using race and/or ethnicity, but expressed some concerns with doing so, on the basis of the sub-categories presented below. | *See subcategories below* |
+| — *Concerns about overgeneralization* | Expression of concerns about over-generalization or over-simplification of individual differences or other complex factors such as access to care. | *"I am neither for nor against the use of race or ethnicity in deciding factors like these as I understand that people vary genetically. I worry about overgeneralization of races, outliers within races, and effects on mixed race individuals, but I don't think that the use of race or ethnicity is racist in itself. In each of the risk calculations presented, I don't think I have enough information on how a person's race/ethnicity could affect their health, but I always 'follow the science' and am open to having any assumptions challenged"* |
+| — *Concerns about bias or discrimination* | Expression of concerns about using race and/or ethnicity potentially leading to bias or discrimination, further disadvantaging certain groups of individuals. | *"Race specific treatment can be very useful because each race has different biological characteristics. The only concern i have is if it might be used for racial discrimination"* |
+| — *Others* | Expressed other concerns with using race and/or ethnicity, such as concerns about information misuse or concerns about lack of scientific evidence. | *"I wonder if this is true or it is just a manipulation to gain some info from me"*; *"whether the database of races is large enough?"* |
+| Concerns about exclusion | Participants expressing that they did not feel represented in the given race and/or ethnicity categories. | *"I noticed that Mexicans are not included on any of this and are mixed with 'Other' tag"*; *"I am native American and feel that NONE of the categories represents my race"* |
+| Concerns about using ZIP code | Expressed concerns or critiqued using ZIP code as a predictor. | *"I didn't get the zip code for demographic instead of race in the previous question"*; *"I find the idea of Zip code to be a useless measure..."* |
+| Insufficient information to form an opinion | Responses indicating that they were unable or unwilling to form an opinion about the use of race and/or ethnicity in clinical algorithms due to a lack of information or knowledge. | *"I'd be interested in reading the why behead \[behind\] these decisions when forming my opinion"*; *"Being a south asian, I'm not sure how these race specific calculations will specifically affect me"* |
+| Lack of awareness of race in clinical algorithms | Responses sharing that they were previously unaware that race is used in some clinical decision-making tools. | *"No, it was just interesting to participate cause this is the first time i come across information like this"*; *"I didn't know there were equations to determine those types of diseases"* |
+
+Codebook for the open-ended question, "Do you have any additional thoughts or concerns to share?"
+:::
+
+::: {#supptab-codebook-freq}
+| Category | n | \% |
+|:-----------------------|-----------------------:|-----------------------:|
+| **In your own words, what does "race or ethnicity" mean to you? There are no right or wrong answers — we are interested in your personal perspective. (total responses analyzed = 993)** |  |  |
+| Physical traits | 370 | 37.3% |
+| Ancestry, heritage or lineage | 226 | 22.8% |
+| Cultural or historical background | 293 | 29.5% |
+| Biology or genetics | 169 | 17.0% |
+| Place of origin | 266 | 26.8% |
+| Self-identity | 37 | 3.7% |
+| Community and belonging | 70 | 7.0% |
+| Social construct | 29 | 2.9% |
+| Distinguishes between race and ethnicity | 123 | 12.4% |
+| Critique or rejection of race | 53 | 5.3% |
+| Medical relevance | 45 | 4.5% |
+| **Have you ever felt that you were treated unfairly in the healthcare system because of your race or ethnicity? (total responses analyzed = 90)** |  |  |
+| Longer wait time or low priority | 20 | 22.2% |
+| Differential treatment | 27 | 30.0% |
+| Dismissive or neglectful behaviour | 26 | 28.9% |
+| Physiological assumption or stereotyping | 15 | 16.7% |
+| Social or behavioural assumption or stereotyping | 7 | 7.8% |
+| Explicit discrimination | 6 | 6.7% |
+| Expressed emotional discomfort | 5 | 5.6% |
+| **Do you have any additional thoughts or concerns to share? (total responses analyzed = 215)** |  |  |
+| Unconditional acceptance | 37 | 17.2% |
+| Trust in medical authority | 6 | 2.8% |
+| *Conditional acceptance* |  |  |
+| — If improves accuracy | 19 | 8.8% |
+| — Based on specific use case | 17 | 7.9% |
+| — Others | 13 | 6.0% |
+| *Rejection* |  |  |
+| — Preference for environmental or social determinants | 13 | 6.0% |
+| — Preference for individualized assessments | 13 | 6.0% |
+| — Others | 14 | 6.5% |
+| *Concerns about using race* |  |  |
+| — Concerns about overgeneralization | 15 | 7.0% |
+| — Concerns about bias or discrimination | 24 | 11.2% |
+| — Others | 12 | 5.6% |
+| Concerns about exclusion | 14 | 6.5% |
+| Concerns about using ZIP code | 2 | 0.9% |
+| Insufficient information to form an opinion | 16 | 7.4% |
+| Lack of awareness of race in clinical algorithms | 10 | 4.7% |
+
+Frequency of codes and categories identified across open-ended responses. *n* refers to the number of responses assigned to each code or category. Percentages reflect the proportion of total responses analyzed (*n* / total responses analyzed). Codes are not mutually exclusive, meaning a single response could be assigned multiple codes; therefore percentages do not sum to 100%.
+:::
+
+## Additional Example Quotes {.appendix}
+
+### Defining Race or Ethnicity {#sec-quote-race .appendix}
+
+The excerpts below are drawn from participant responses to the following open-ended question: "In your own words, what does "race or ethnicity" mean to you? There are no right or wrong answers - we are interested in your personal perspective."
+
+> "For me, race is my physical traits, how do I look. Ethnicity is my heritage, how do I feel. For example, I am Southeast Asian with light brown skin, black hair, light brown eyes. My mom's ethnicity is Batak Simalungun, while my dad's is Batak Tapanuli. I was raised in Simalungun and spent half of my life here. So, I considered my ethnicity as a Simalungunese, although my surname is from Tapanuli."
+
+> "Ancestors/cultural background - I'm Inuit, and native people in general are excluded too often in medical settings/research/general consideration. Indigenous people are so important to medical research and care, and it's unethical to exclude us. Many institutions can and should do better (including you guys, perhaps, since you did not specifically include us); we should not be lumped into a general 'other' group, and as the original peoples of North America, it's wrong on so many levels for research, etc to not consider our medical backgrounds and needs. I think it's very important to consider Black, Asian, etc health systems, family history, etc as well, but please stop excluding the natives!"
+
+> "Race or ethnicity means a whole lot to me. It is one of those factors that signal proximity to a person's identity. Race forms a huge part in my identity. For example, i am a black african male before i am anything else, and this is incredibly important to me because it pours out that i have experiences that are reflective to black people rather than any other race."
+
+> "To me, race or ethnicity means clanship and togetherness, a feeling of belonging to people who share the same culture, traditions, and background. It reflects common roots and a shared identity that connects individuals as part of a community."
+
+> "Race is a social construct used to make some feel superior to others. Ethnicity is where you were born or the cultures you grow up with. For example, if black people have a higher incidence of lung or kidney disease it could be because they live in red lined districts, with poor air and water quality regulations. It's not because they're black that their health is bad, it's because health and safety measures and social constructs have placed them in this predicament."
+
+> "In healthcare, race and ethnicity means 'genetic background'."
+
+> "Mostly just skin color and/or an area of origination of a certain people; but even then... they aren't the same. Are North American indigenous the same as Australian aborigines, or even S. American indigenous people? What about Japanese vs Korean vs Chinese vs Vietnamese vs Filipino? They're quite different, but some of these people are mixed blood as well. Tbh, race or ethnicity is just a generalization for an unknown, and just a guess about where someone may originate from."
+
+> "Race or ethnicity feels like family to me, yet also like distant relatives. When I go back to my hometown, I feel no particular connection because everyone is the same race. But when I go to another country and see someone of my own race, I can't tell you how glad I am to see them. That's how race feels to me—like family, yet like distant relatives."
+
+> "As an East Asian, I do really care and concern about my ethnicity and race, and prejudice/discrimination against my race since I move to an European country. Therefore, race or ethnicity is something threaten me and make me worried and scared in daily life. I do have rather negative image for it."
+
+> "It is a huge part of who I am and dare I say one of the most important. I am German and Native American. The very dichotomy of that mixture has caused so much contradiction not only internally but externally as well. I never quite understood it until I got older. I always felt drawn to choose one. Looking too white to be native and looking too native to be white. I never understood why it mattered because I was still me. Eventually, I came to realize the duality of those perspectives would be exactly what made me who I was. I won't shy away from that."
+
+> "To me, ethnicity is more medically concrete than race. Ethnicity is your personal history, race is a construct used to discriminate by distributing power unequally."
+
+### Algorithmic Reform {#sec-quote-reform .appendix}
+
+The excerpts below are drawn from participant responses to "Do you have any additional thoughts or concerns to share?". This question was posed after participants responded to questions about algorithmic reform based on three revised and one unrevised clinical calculators.
+
+> "The biggest concern I have is the exclusion of Africans. To simply group all Africans in ‘African-American’ will cause a lot of misdiagnosis as these people are very diverse and medical diagnosis cannot be grouped. I think being asked for your country and race and ethnicity is the only way to ensure fairness and more accurate diagnosis."
+
+> "I understand why medical experts want to reduce harm and improve accuracy, but I still feel uneasy about using race or ethnicity in medical calculators because these categories can be imprecise and socially defined. I think it’s important to keep re-evaluating these tools and, where possible, move toward using direct biological or social factors rather than race itself."
+
+> "I am aware that some racial groups are really more likely to have certain diseases like Diabetes. Pacific people, Asians and Hispanics have higher diabetic risk. While Whites have higher risk for skin cancer compared to other races. I think race-specific calculations must be applied depending on the disease or medical condition and careful scientific investigation must be done before implementing them."
+
+> "I’m not particularly concerned of the fact that race/ethnicity could be included in the calculator if this inclusion is statistically relevant and improves the care given to the patients, but I would want for them to be tested against possible harmful biases."
+
+> "The calculators should be based on the country and place that you lived in you might be Asian but you never went there you have been always in New York. If by race it’ll be unfair it should be where the person lives and what are the habits of this person."
+
+> "I’m not qualified in the medical field, so I’d prefer to leave it to my doctors. I don’t mind, however, of the race, gender or any other trait is used in the statistical analysis; if there are actually some patterns, it’s okay to use them for the benefit of the people in my opinion."
+
+### Experiencing Racism in the Healthcare System {#sec-quote-racism .appendix}
+
+Survey participants who answered "Yes" to the question "Have you ever felt that you were treated unfairly in the healthcare system because of your race or ethnicity?", were asked the following: "If you feel comfortable sharing, please briefly describe your experience. You may skip this question if you prefer not to answer." The excerpts below are drawn from participant responses to this question.
+
+> "I remember a hospitalization case of my father in well known government hospital. We remain in queue for 5 long hours for some clinical tests but patients outside of our country and doctors relatives from foreign country got all facilities at instance. It really felt helpless because condition of my father was serious and no doctors or nurses were ready to support."
+
+> "I have experienced situations in healthcare where my symptoms were minimized or not fully investigated. In one instance, a doctor assumed my risk for certain conditions was low based on my race and did not initially recommend further testing, even though I continued to have symptoms. This made me feel that decisions were being influenced by stereotypes rather than my individual health concerns."
+
+> "I felt like I was treated unfairly during labour, like I was expected to endure more pain, plus even during the aftercare my pain was ignored."
+
+> "I was in a hospital after a major loss of blood because of a very heavy menstrual cycle. The were having a difficult time finding a vein and had to stick me multiple times. I was very tired and in a lot of pain to then hear a nurse comment about how the man trying to find my vein should not be so gentle because black peoples skin is thicker. The number of times I've heard this is ridiculous."
+
+> "Because of my middle eastern race, they considered higher chance of possibility of some bad characteristics or having some diseases."
+
+> "I went to a clinic for a tooth ache once and it was really clear that they just wanted to pull it. They said would could save it, but it would be really expensive....as if I couldn't afford it."
+
+> "I feel like I have been to clinics where everyone shared the same fair complexion, and blonde hair & they were very rude to me. Made comments about they see weight struggles in Native Americans (I am not overweight, but they mentioned in passing). 
+
+> "I consider myself Native American, but there is a lot of mixed blood going back a few generations. In my case, how I am perceived is dependent on the individual person doing the perceiving. Sometimes I am seen as White, sometimes Native, and sometimes they just look me up and down and say, in a very queer tone, 'What are you?' 
