@@ -4,7 +4,7 @@ Reproducibility repository for the paper:
 
 > Adibi A, Le KX, Pierson E, Diao JA, Esfandiari N, Carlsten C, Sadatsafavi M.
 > *Multinational Public Opinion on Race, Ethnicity, and Algorithmic Reform in Medicine.*
-> medRxiv 2026.05.15.26352687. <https://www.medrxiv.org/content/10.64898/2026.05.15.26352687v1>
+> medRxiv 2026.05.15.26352687. <https://www.medrxiv.org/content/10.64898/2026.05.15.26352687>
 
 ## Overview
 
