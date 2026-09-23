@@ -7,18 +7,21 @@ format:
 execute:
   echo: false
   fig-dpi: 300
+knitr:
+  opts_chunk:
+    dev: ["png", "pdf"]
 tbl-cap-location: bottom
 crossref:
   custom:
     - kind: float
       key: suppfig
       latex-env: suppfig
-      reference-prefix: Figure E
+      reference-prefix: Figure S
       space-before-numbering: false
     - kind: float
       key: supptab
       latex-env: supptab
-      reference-prefix: Table E
+      reference-prefix: Table S
       space-before-numbering: false
 author:
   - name: Amin Adibi MSc
@@ -51,24 +54,16 @@ author:
     affiliation:
       - ref: ubc
 abstract: >
-  **Importance:** Several professional medical societies have removed race and ethnicity from widely used clinical algorithms with implications for millions. Yet, patient and public opinions regarding the tensions underlying these pivotal changes have not been systematically explored.\
+  **Background:** Several professional medical societies have removed race and ethnicity from widely used clinical algorithms with implications for millions. Public perspectives on these reforms, particularly outside the United States, have not been systematically explored.\
 
-  **Objective:**  To assess global public opinion on the use of race or ethnicity in clinical algorithms, including preferences for different approaches to algorithmic reform and perceptions of alternative predictors.\
+  **Methods:** We conducted a multinational cross-sectional online survey with closed and open-ended questions among adults recruited through Prolific in January 2026, with quota sampling for equal participation by sex and across 10 categories of self-identified race and ethnicity. Participants reviewed four guideline-referenced algorithms representing different reform approaches (kidney function, spirometry, cardiovascular risk, and fracture risk), and rated representation, harms, benefits, and preferences between race-specific and race-free versions. Net comfort was the percentage comfortable minus the percentage uncomfortable. Quantitative analyses were descriptive; open-ended responses underwent content analysis.\
 
-  **Design:** Cross-sectional survey study.\
+  **Results:** Of 1,050 responses, 994 (94.7%) from 43 countries were eligible. Net comfort with race or ethnicity as a predictor was +62.4% (95% CI, +57.8 to +66.9), compared with +14.5% (95% CI, +9.1 to +20.0) for postal or ZIP code. Overall, 87.9% (95% CI, 85.8 to 89.9) were comfortable with the use of race or ethnicity if a clinician explained its use, and only 12.8% agreed race and ethnicity should never be used clinically. Across three reformed algorithms, 40.0% to 47.6% preferred race-specific versions, whereas 16.7% to 28.2% preferred race-free alternatives. Between 22.0% (fracture risk) and 43.0% (cardiovascular risk) felt unrepresented by algorithm categories. Findings were largely consistent across countries, self-identified race and ethnicity, and among participants reporting prior experiences of racism in healthcare.\
 
-  **Setting:** Multinational opt-in online survey in January 2026.\
-
-  **Participants:** A volunteer convenience sample with quota sampling to achieve approximately equal participation by sex and across ten categories of self-identified race and ethnicity.\
-
-  **Main Outcomes and Measures:** Self-reported comfort with demographic and social predictors in clinical calculators, with net comfort defined as percentage extremely or somewhat comfortable minus percentage extremely or somewhat uncomfortable; preferences for race-specific versus race-free algorithms; perceptions of algorithmic harm or benefit.\
-
-  **Results:** Of 1,050 responses, 994 (94.7%) met eligibility criteria. Participants resided in 43 countries with a median age of 32.0 years (IQR, 26-41). Net comfort with the use of race or ethnicity in a hypothetical cancer risk calculator was +62.4% (95% CI: +57.8% to +66.9%), compared with +14.5% (95% CI: +9.1% to +20.0%) for postal or ZIP code. Overall, 87.9% (95% CI: 85.8% to 89.9%) were comfortable with the use of race or ethnicity if a clinician explained its use, and only 12.8% agreed race and ethnicity should never be used clinically. Across spirometry, kidney function, and cardiovascular risk calculators, 40.0% to 47.6% preferred race-specific versions, whereas 16.7% to 28.2% preferred race-free alternatives. Furthermore, a substantial proportion disagreed that they were well-represented by race and ethnicity categories, ranging from 22.0% for osteoporotic fracture risk equations to 43.0% for cardiovascular risk equations. These findings were largely consistent across countries, self-identified race and ethnicity, and among participants reporting prior experiences of racism in healthcare.\
-  
-  **Conclusions and Relevance:** In our diverse multinational survey study, respondents were comfortable with the use of race and ethnicity across application areas, but often did not feel represented by existing categories and were less comfortable with alternatives based on postal or ZIP codes.
+  **Conclusions:** In this diverse but non-representative multinational sample, respondents were comfortable with the use of race and ethnicity in clinical algorithms, although many did not feel represented by existing categories and were less comfortable with alternatives based on postal or ZIP codes.
 
 bibliography: references.bib
-csl: jama.csl
+csl: new-england-journal-of-medicine.csl
 ---
 
 ```{r}
@@ -136,11 +131,11 @@ if (!"Age group" %in% names(responses) && "Age" %in% names(responses)) {
 
 ## Introduction
 
-Since 2019, there has been a movement to reconsider the use of race and ethnicity in clinical equations and algorithms [@Vyas2020; @Nkinsi2022]. As of April 2026, several professional societies have removed race as an explicit input from clinical algorithms used to estimate spirometry reference standards [@bhakta2023; @Bowerman2023], kidney function [@Delgado2022], cardiovascular risk for treating dyslipidemia and hypertension [@khan2024; @jones_2025; @Morris_2026], and risk of vaginal birth after caesarean [@the_american_college_of_obstetricians_and_gynecologists_practice_2021]. Other medical societies, including the International Osteoporosis Foundation and the Society of Thoracic Surgeons have resisted calls to remove race from their risk calculators, citing unacceptable accuracy loss [@macgillivray_impact_2023; @shahian_social_2022] particularly for minority groups in the US [@kanis_race-specific_2024].
+Since 2019, there has been a movement to reconsider the use of race and ethnicity in clinical equations and algorithms [@Vyas2020; @Nkinsi2022]. As of April 2026, several professional societies have removed race as an explicit input from clinical algorithms used to estimate spirometry reference standards [@bhakta2023; @Bowerman2023], kidney function [@Delgado2022], cardiovascular risk for treating dyslipidemia and hypertension [@khan2024; @jones_2025; @Morris_2026], and risk of vaginal birth after cesarean [@the_american_college_of_obstetricians_and_gynecologists_practice_2021]. Other medical societies, including the International Osteoporosis Foundation and the Society of Thoracic Surgeons have resisted calls to remove race from their risk calculators, citing unacceptable accuracy loss [@macgillivray_impact_2023; @shahian_social_2022] particularly for minority groups in the US [@kanis_race-specific_2024].
 
 A critical gap in the debate over race or ethnicity in clinical algorithms has been the relative absence of global patient and public perspectives [@bhakta2023]. Patient and public opinion studies on this topic have focused on the US [@schmidt2023; @jain2023; @diao2026], even though some of these algorithms are deployed globally [@braun_breathing_2014]. The broader debate has also been largely US-centric [@chellappoo_race_2024; @doh_position_2025; @jaime_ethnic_2024].
 
-Here, we report a multinational survey on race or ethnicity and algorithmic reform in medicine, focusing on four guideline-referenced algorithms representing different reform approaches (@tbl-algorithms). Our sample was non-representative but diverse, recruited from opt-in online participants living in 43 countries across six continents, with quota-sampling to ensure equal participation by sex and ten self-identified categories of race and ethnicity.
+Here, we report a multinational survey on race or ethnicity and algorithmic reform in medicine, focusing on four guideline-referenced algorithms representing different reform approaches (@tbl-algorithms). Our sample was non-representative but diverse, recruited from opt-in online participants living in 43 countries across six continents, with quota-sampling to ensure equal participation by sex and 10 self-identified categories of race and ethnicity.
 
 ::: {#tbl-algorithms style="font-size: 0.75em;"}
 | Original Algorithm | Purpose | Race/Ethnicity Categories | Revised Algorithm | Reform | Professional Society | Ref. |
@@ -153,7 +148,7 @@ Here, we report a multinational survey on race or ethnicity and algorithmic refo
 : Overview of Clinical Algorithms Included in the Survey
 :::
 
-^1^ The "other" category exists in pooled cohort web calculator but not in the underlying statistical model. In the web app, it uses the "White" value alongside a warning that the results might under- or overestimate risk for certain population groups.
+^1^ The "other" category exists in the Pooled Cohort Equations web calculator but not in the underlying statistical model. In the web app, it uses the "White" value alongside a warning that the results might under- or overestimate risk for certain population groups.
 
 ^2^ Ethnicity sub-categories are shown per FRAX v1.4.8.
 
@@ -162,7 +157,7 @@ Here, we report a multinational survey on race or ethnicity and algorithmic refo
 
 ### Questionnaire Design
 
-The questionnaire was iteratively drafted with feedback from six graduate students (epidemiology, health outcomes, clinical prediction modelling) and three faculty members (medicine, clinical prediction, algorithmic fairness), then revised further after pretesting via cognitive interviews with two patient partners. The exact wording of the questionnaire is in the appendix.
+The questionnaire was iteratively drafted with feedback from six graduate students (epidemiology, health outcomes, clinical prediction modeling) and three faculty members (medicine, clinical prediction, algorithmic fairness), then revised further after pretesting via cognitive interviews with two patient partners. The exact wording of the questionnaire is in the Supplementary Appendix.
 
 After a plain-language explainer about clinical calculators, the questionnaire presented four calculators reflecting different reform approaches in randomized order: refitting without race (eGFR), race‑averaged reference values (spirometry), replacing race with an area‑based deprivation score from postal codes (PREVENT), and retaining race or ethnicity (FRAX). For each, we asked whether participants felt represented by its categories, whether using race or ethnicity could improve their care, and whether they worried it might cause harm, using Likert‑scale items with randomized response direction. After all four sections, participants saw the race-free version (where available) and chose which they preferred.
 
@@ -174,11 +169,11 @@ Replication items enabled comparison with prior representative US surveys, cover
 
 ### Survey Recruitment
 
-We recruited participants through Prolific, with quota sampling for equal participation by sex as recorded on legal/official documents and ten self-identified ethnicity groups previously collected by Prolific. The survey was distributed over four waves at midnight and noon Pacific Time in January 2026. To expand geographical diversity, residents of countries exceeding 100 responses were excluded from subsequent waves. Participants consented at the beginning and end of the survey. Those who completed the study and passed authenticity checks were reimbursed at an average rate of £9.72/hour.
+We recruited participants through Prolific, with quota sampling for equal participation by sex as recorded on legal/official documents and 10 self-identified ethnicity groups previously collected by Prolific. The survey was distributed over four waves at midnight and noon Pacific Time in January 2026. To expand geographical diversity, residents of countries exceeding 100 responses were excluded from subsequent waves. Participants consented at the beginning and end of the survey. Those who completed the study and passed authenticity checks were reimbursed at an average rate of £9.72/hour.
 
 ### Demographics
 
-Self-identified data on age, sex, gender, ethnicity, countries of residence and birth, employment, and socioeconomic status were collected by Prolific prior to the survey. Prolific's ethnicity field required a single category; an additional survey item asked participants to select all population groups that applied (or self-describe), with options including African, African American, Caribbean, East Asian, Hispanic or Latina/Latino, Indigenous, Middle Eastern and North African, South Asian, Southeast Asian, and White (full wording in the appendix).
+Self-identified data on age, sex, gender, ethnicity, countries of residence and birth, employment, and socioeconomic status were collected by Prolific prior to the survey. Prolific's ethnicity field required a single category; an additional survey item asked participants to select all population groups that applied (or self-describe), with options including African, African American, Caribbean, East Asian, Hispanic or Latina/Latino, Indigenous, Middle Eastern and North African, South Asian, Southeast Asian, and White (full wording in the Supplementary Appendix).
 
 ### Analysis
 The study adhered to the AAPOR best practices. Open-ended responses were analyzed by conventional content analysis [@hsieh2005] in NVivo v1.7.2; non-English responses were translated via Google Translate and cross-checked with DeepL. Two reviewers independently developed a shared codebook through open coding of a subset of responses, then independently applied it to 10% of responses per question to ensure consistency. After discrepancies were resolved by consensus, the remaining responses were coded by one reviewer. Codes were grouped into broader categories by conceptual similarity, frequencies tallied, and representative quotes selected. Quantitative analyses were descriptive and unweighted, performed in Quarto v1.10.18 and R v4.5.2 with 95% confidence intervals from 2000 nonparametric bootstrap resamples.
@@ -189,11 +184,11 @@ The study was approved by the Behavioural Research Ethics Board at the Universit
 
 ## Results
 
-Of 1,050 responses received, 48 participants revoked consent, 6 timed out, and 2 failed authenticity checks. The remaining 994 participants lived in 43 countries (@suppfig-top-country-residence), were born in 87 (@suppfig-top-country-birth), and had a median age of 32.0 years (IQR, 26-41). Among them, 500 (50.3%) were female and 494 (49.7%) were male by sex as recorded on legal/official documents. For the subset with gender identity data available, 50.1% identified as women, 48.4% as men, and 1.6% as non-binary. Overall, `r sprintf("%.1f%%", mean(responses[["Employment status"]] %in% "Full-Time") * 100)` worked full-time (@tbl-1; characteristics stratified by ethnicity in @supptab-characteristics-by-ethnicity), and 23.7% had a background in healthcare or health sciences. Quantitative survey responses were largely complete, with no variable missing for more than 0.7% of participants.
+Of 1,050 responses received, 48 participants revoked consent, 6 timed out, and 2 failed authenticity checks. The remaining 994 participants lived in 43 countries (@suppfig-top-country-residence), were born in 87 (@suppfig-top-country-birth), and had a median age of 32.0 years (IQR, 26 to 41). Among them, 500 (50.3%) were female and 494 (49.7%) were male by sex as recorded on legal/official documents. For the subset with gender identity data available, 50.1% identified as women, 48.4% as men, and 1.6% as non-binary. Overall, `r sprintf("%.1f%%", mean(responses[["Employment status"]] %in% "Full-Time") * 100)` worked full-time (@tbl-1; characteristics stratified by ethnicity in @supptab-characteristics-by-ethnicity), and 23.7% had a background in healthcare or health sciences. Quantitative survey responses were largely complete, with no variable missing for more than 0.7% of participants.
 
 ```{r}
 #| label: tbl-1
-#| tbl-cap: Characteristics of participants, based on demographics data collected by Prolific. Recruitment used quota sampling to obtain approximately equal numbers of participants across sex as recorded on legal/official documents and ten self-identified groups of race and ethnicity, based on single choice categories selected by participants when signing up. 
+#| tbl-cap: Characteristics of participants, based on demographics data collected by Prolific. Recruitment used quota sampling to obtain approximately equal numbers of participants across sex as recorded on legal/official documents and 10 self-identified groups of race and ethnicity, based on single choice categories selected by participants when signing up. 
 
 north_america      <- c("Canada", "United States")
 europe             <- c("United Kingdom", "Poland", "Spain", "Italy", "Germany", "France",
@@ -280,7 +275,7 @@ table1 |>
     rows = variable == "Socioeconomic status" & row_type == "label"
   ) |>
     modify_footnote_body(
-    footnote = "Regions classified according to the United Nations M49 standard (https://unstats.un.org/unsd/methodology/m49/).",
+    footnote = "Regions classified according to the United Nations M49 standard.",
     columns = "label",
     rows = variable == "Region of residence" & row_type == "label"
   ) |>
@@ -290,7 +285,7 @@ table1 |>
 
 ### Perceptions of Race and Ethnicity
 
-Participants were asked to describe what "race or ethnicity" meant to them. Of 993 substantive responses analyzed, three (Portuguese, Polish, Spanish) were translated before non-mutually exclusive coding. Many defined race and ethnicity in terms of physical traits and skin colour (37.3%), place of origin (26.8%), ancestry (22.8%), and genetics (17.0%), while fewer described them as social constructs (2.9%). About 12.4% explicitly defined race and ethnicity as distinct concepts—the former relating to visible physical characteristics and the latter relating to cultural background or upbringing. Some (7.0%) described race and ethnicity as central to their identity, providing togetherness, belonging, and pride. A small subset (4.5%) noted perceived differences in disease risk across racial or ethnic groups. The codebook (@supptab-codebook-race), code frequencies (@supptab-codebook-freq), and example responses are in the Appendix.
+Participants were asked to describe what "race or ethnicity" meant to them. Of 993 substantive responses analyzed, three (Portuguese, Polish, Spanish) were translated before non-mutually exclusive coding. Many defined race and ethnicity in terms of physical traits and skin color (37.3%), place of origin (26.8%), ancestry (22.8%), and genetics (17.0%), while fewer described them as social constructs (2.9%). About 12.4% explicitly defined race and ethnicity as distinct concepts—the former relating to visible physical characteristics and the latter relating to cultural background or upbringing. Some (7.0%) described race and ethnicity as central to their identity, providing togetherness, belonging, and pride. A small subset (4.5%) noted perceived differences in disease risk across racial or ethnic groups. The codebook (@supptab-codebook-race), code frequencies (@supptab-codebook-freq), and example responses are in the Supplementary Appendix.
 
 ### Comfort Level for Different Predictors
 
@@ -315,8 +310,8 @@ boot_ci_net <- function(x, R = 2000) {
   quantile(reps, c(0.025, 0.975), names = FALSE)
 }
 
-fmt_ci_signed       <- function(p, ci) sprintf("%+.1f%% (95%% CI: %+.1f to %+.1f)", p, ci[1], ci[2])
-fmt_ci_signed_inner <- function(p, ci) sprintf("%+.1f%%, 95%% CI: %+.1f to %+.1f",   p, ci[1], ci[2])
+fmt_ci_signed       <- function(p, ci) sprintf("%+.1f%% (95%% CI, %+.1f to %+.1f)", p, ci[1], ci[2])
+fmt_ci_signed_inner <- function(p, ci) sprintf("%+.1f%%; 95%% CI, %+.1f to %+.1f",   p, ci[1], ci[2])
 
 # Per-factor net comfort + 95% CI
 nc_age      <- net_comfort(responses[["fd-factors_1"]]); ci_nc_age      <- boot_ci_net(responses[["fd-factors_1"]])
@@ -406,8 +401,8 @@ pct_guidelines   <- calc_pct_agree("rep-diao_3")  # 80%
 pct_best_care    <- calc_pct_agree("rep-diao_1")  # 79%
 pct_never_use    <- calc_pct_agree("rep-diao_4")  # 13%
 
-fmt_ci <- function(p, ci) sprintf("%.1f%% (95%% CI: %.1f–%.1f)", p, ci[1], ci[2])
-fmt_ci_inner <- function(p, ci) sprintf("%.1f%%, 95%% CI: %.1f–%.1f", p, ci[1], ci[2])
+fmt_ci <- function(p, ci) sprintf("%.1f%% (95%% CI, %.1f to %.1f)", p, ci[1], ci[2])
+fmt_ci_inner <- function(p, ci) sprintf("%.1f%%; 95%% CI, %.1f to %.1f", p, ci[1], ci[2])
 
 # ethnicity_categories is defined later in the document; redefined here for early use
 ethnicity_categories_early <- c(
@@ -456,7 +451,7 @@ Overall, `r fmt_ci(pct_discussed, ci_discussed)` were comfortable with race or e
 #| label: fig-comfort-factor
 #| fig-width: 9
 #| fig-height: 5
-#| fig-cap: "Respondent comfort levels with the use of each demographic and clinical factor in a hypothetical cancer risk calculator. Participants were asked: \"Imagine a doctor is using a clinical calculator to determine your risk for a type of cancer. How comfortable are you with the calculator using each of the following pieces of information?\" Bars extend rightward for comfortable responses (light and dark blue) and leftward for uncomfortable responses (light and dark red), with neutral responses (grey) centred at zero. Factors are ordered by net comfort (total percentage extremely or somewhat comfortable minus total percentage extremely or somewhat uncomfortable)."
+#| fig-cap: "Respondent comfort levels with the use of each demographic and clinical factor in a hypothetical cancer risk calculator. Participants were asked: \"Imagine a doctor is using a clinical calculator to determine your risk for a type of cancer. How comfortable are you with the calculator using each of the following pieces of information?\" Bars extend rightward for comfortable responses (light and dark blue) and leftward for uncomfortable responses (light and dark red), with neutral responses (grey) centered at zero. Factors are ordered by net comfort (total percentage extremely or somewhat comfortable minus total percentage extremely or somewhat uncomfortable)."
 
 factor_vars <- c("fd-factors_1", "fd-factors_2", "fd-factors_3",
                  "fd-factors_4", "fd-factors_5", "fd-factors_6", "fd-factors_7")
@@ -496,7 +491,7 @@ factor_order <- comfort_summary |>
   arrange(net) |>
   pull(factor)
 
-# Build diverging positions: uncomfortable goes left, neutral centred, comfortable goes right
+# Build diverging positions: uncomfortable goes left, neutral centered, comfortable goes right
 comfort_plot <- comfort_summary |>
   mutate(factor = factor(factor, levels = factor_order)) |>
   group_by(factor) |>
@@ -687,7 +682,7 @@ dis_rep_frax   <- pct_disagree_likert(responses[["frax-questions_1"]])
 dis_rep_pooled <- pct_disagree_likert(responses[["cvd-questions_1"]])
 ```
 
-Across all four race-specific tools (@fig-reaction), 44.8--64.8% felt represented by the provided racial categories (net agreement from `r fmt_ci_signed_inner(na_rep_pooled, ci_rep_pooled)` for Pooled Cohort, which had binary race categories, to `r fmt_ci_signed_inner(na_rep_frax, ci_rep_frax)` for FRAX, which is country-specific and ethnicity-specific in certain countries), and a majority believed incorporating race helped improve their care (`r sprintf("%.1f--%.1f%%", helps_lo, helps_hi)`, net +33.9% to +40.1%). Roughly half disagreed that using race or ethnicity could cause harm (net -21.2% to -28.5%).
+Across all four race-specific tools (@fig-reaction), 44.8 to 64.8% felt represented by the provided racial categories (net agreement from `r fmt_ci_signed_inner(na_rep_pooled, ci_rep_pooled)` for Pooled Cohort, which had binary race categories, to `r fmt_ci_signed_inner(na_rep_frax, ci_rep_frax)` for FRAX, which is country-specific and ethnicity-specific in certain countries), and a majority believed incorporating race helped improve their care (`r sprintf("%.1f to %.1f%%", helps_lo, helps_hi)`, net +33.9% to +40.1%). Roughly half disagreed that using race or ethnicity could cause harm (net -21.2% to -28.5%).
 
 ```{r}
 #| label: calc-revised-reaction-stats
@@ -731,7 +726,7 @@ rb_ratio_lo <- min(rb_alt_ratios)
 rb_ratio_hi <- max(rb_alt_ratios)
 ```
 
-Respondents did not uniformly embrace revised algorithms that no longer used race and ethnicity: `r fmt_ci(pct_spiro_rb, ci_spiro_rb)` and `r fmt_ci(pct_egfr_rb, ci_egfr_rb)` preferred the race-based versions of spirometry (GLI-2012) and eGFR (2009 CKD-EPI), versus `r fmt_ci(pct_spiro_rf, ci_spiro_rf)` and `r fmt_ci(pct_egfr_rf, ci_egfr_rf)` who favoured the revised replacements (@fig-reaction). For cardiovascular risk, `r fmt_ci(pct_cvd_rb, ci_cvd_rb)` preferred the race-based Pooled Cohort over `r fmt_ci(pct_cvd_zip, ci_cvd_zip)` who preferred PREVENT, which replaces race with optional ZIP code as a socioeconomic proxy. The remaining `r sprintf("%.1f--%.1f%%", neutral_lo, neutral_hi)` were neutral, unsure, or self-described their preference across the three pairs.
+Respondents did not uniformly embrace revised algorithms that no longer used race and ethnicity: `r fmt_ci(pct_spiro_rb, ci_spiro_rb)` and `r fmt_ci(pct_egfr_rb, ci_egfr_rb)` preferred the race-based versions of spirometry (GLI-2012) and eGFR (2009 CKD-EPI), versus `r fmt_ci(pct_spiro_rf, ci_spiro_rf)` and `r fmt_ci(pct_egfr_rf, ci_egfr_rf)` who favored the revised replacements (@fig-reaction). For cardiovascular risk, `r fmt_ci(pct_cvd_rb, ci_cvd_rb)` preferred the race-based Pooled Cohort over `r fmt_ci(pct_cvd_zip, ci_cvd_zip)` who preferred PREVENT, which replaces race with optional ZIP code as a socioeconomic proxy. The remaining `r sprintf("%.1f to %.1f%%", neutral_lo, neutral_hi)` were neutral, unsure, or self-described their preference across the three pairs.
 
 ```{r}
 #| label: ai_concern
@@ -803,7 +798,7 @@ When asked who should have input on race or ethnicity in clinical calculators, `
 #| label: fig-reaction
 #| fig-width: 10
 #| fig-height: 8
-#| fig-cap: "Respondent reactions to race-specific algorithms and preferences for their revised counterparts. The upper three panels show agreement with three statements per algorithm (5-point Likert scale): *Represented* ('I feel represented by the race or ethnicity categories used to [interpret lung function test results / estimate kidney function / estimate heart disease risk / estimate bone fracture risk]'); *Worry harm* ('I worry that using my race or ethnicity in [spirometry / kidney function tests / heart disease risk calculators / the FRAX calculator] to support clinical decisions might harm me'); and *Helps care* ('I believe that using race or ethnicity in [spirometry / kidney function estimation / heart disease risk calculator / the FRAX calculator] could help ensure better care for me'). The lower panel shows preference for the revised race-free version over the race-specific original, among the three algorithms with a revised counterpart; FRAX has no revised version. 'Prefer to self-describe' responses are included in Neutral/Unsure. For all panels, bars extend rightward for agreement or preference for the revised version (blue) and leftward for disagreement or preference for the race-based version (red), with neutral responses (yellow) centred at zero. Net agreement, or net preference for the revised version, is shown to the right of each bar."
+#| fig-cap: "Respondent reactions to race-specific algorithms and preferences for their revised counterparts. The upper three panels show agreement with three statements per algorithm (5-point Likert scale): *Represented* ('I feel represented by the race or ethnicity categories used to [interpret lung function test results / estimate kidney function / estimate heart disease risk / estimate bone fracture risk]'); *Worry harm* ('I worry that using my race or ethnicity in [spirometry / kidney function tests / heart disease risk calculators / the FRAX calculator] to support clinical decisions might harm me'); and *Helps care* ('I believe that using race or ethnicity in [spirometry / kidney function estimation / heart disease risk calculator / the FRAX calculator] could help ensure better care for me'). The lower panel shows preference for the revised race-free version over the race-specific original, among the three algorithms with a revised counterpart; FRAX has no revised version. 'Prefer to self-describe' responses are included in Neutral/Unsure. For all panels, bars extend rightward for agreement or preference for the revised version (blue) and leftward for disagreement or preference for the race-based version (red), with neutral responses (yellow) centered at zero. Net agreement, or net preference for the revised version, is shown to the right of each bar."
 
 algo_levels    <- c("GLI-2012", "2009 CKD-EPI", "Pooled Cohort", "FRAX")
 all_dim_levels <- c("Represented", "Worry harm", "Helps care",
@@ -1003,7 +998,7 @@ ggplot(combined_diverging, aes(y = algorithm, xmin = xmin, xmax = xmax, fill = r
         strip.text = element_text(size = 11))
 ```
 
-Among 215 substantive open-ended responses to other concerns, recurring themes were oversimplification of broad categories like "Black", "White", or "Hispanic" (7.0%) and risk of bias or discrimination grounded in historical misuse (11.2%). Many participants would accept race-specific tools conditionally if shown to improve accuracy or outcomes (8.8%) or on a case-by-case basis by disease indication (7.9%). Notably, 17.2% supported using race in clinical contexts, reasoning that it carries biological implications or serves as a proxy for environmental or lifestyle factors. A smaller subset (2.8%) expressed full trust in providers and researchers. The codebook (@supptab-codebook-reform), code frequencies (@supptab-codebook-freq), and example responses are in the appendix.
+Among 215 substantive open-ended responses to other concerns, recurring themes were oversimplification of broad categories like "Black", "White", or "Hispanic" (7.0%) and risk of bias or discrimination grounded in historical misuse (11.2%). Many participants would accept race-specific tools conditionally if shown to improve accuracy or outcomes (8.8%) or on a case-by-case basis by disease indication (7.9%). Notably, 17.2% supported using race in clinical contexts, reasoning that it carries biological implications or serves as a proxy for environmental or lifestyle factors. A smaller subset (2.8%) expressed full trust in providers and researchers. The codebook (@supptab-codebook-reform), code frequencies (@supptab-codebook-freq), and example responses are in the Supplementary Appendix.
 
 ```{r}
 #| include: false
@@ -1063,7 +1058,7 @@ prolific_eth_colors <- c(
 #| label: fig-ethnicity-sankey
 #| fig-width: 12
 #| fig-height: 8
-#| fig-cap: "Alluvial (Sankey) diagram showing how racial and ethnic self-identification shifts as the available categories change across alternative classification systems used in clinical calculators. Each vertical bar (stratum) represents one system: Prolific ethnicity, the single category participants selected when they signed up for the Prolific platform, followed by the race/ethnicity categories offered by spirometry references (GLI), eGFR, and cardiovascular risk (pooled cohort) algorithms. Each flowing ribbon represents respondents who shared the same combination of choices across all four systems; ribbon width is proportional to the number of respondents on that path. Ribbons that fan out or merge across columns indicate that respondents using one label did not consistently use the same label in the next system. The extensive criss-crossing visible throughout the diagram illustrates that self-identification is context-dependent: the categories offered shape the choices people make. This is especially evident for groups absent from certain algorithm category sets. For example, GLI-2012 spirometry references offer no dedicated Middle Eastern or Hispanic/Latino option, yet only 40.6% of Middle Eastern and 37.5% of Hispanic/Latino respondents chose 'White', the category algorithm developers had intended for them. Respondents who declined to answer are shown separately (Declined)."
+#| fig-cap: "Alluvial (Sankey) diagram showing how racial and ethnic self-identification shifts as the available categories change across alternative classification systems used in clinical calculators. Each vertical bar (stratum) represents one system: Prolific ethnicity, the single category participants selected when they signed up for the Prolific platform, followed by the race/ethnicity categories offered by spirometry references (GLI), eGFR, and cardiovascular risk (Pooled Cohort Equations) algorithms. Each flowing ribbon represents respondents who shared the same combination of choices across all four systems; ribbon width is proportional to the number of respondents on that path. Ribbons that fan out or merge across columns indicate that respondents using one label did not consistently use the same label in the next system. The extensive criss-crossing visible throughout the diagram illustrates that self-identification is context-dependent: the categories offered shape the choices people make. This is especially evident for groups absent from certain algorithm category sets. For example, GLI-2012 spirometry references offer no dedicated Middle Eastern or Hispanic/Latino option, yet only 40.6% of Middle Eastern and 37.5% of Hispanic/Latino respondents chose 'White', the category algorithm developers had intended for them. Respondents who declined to answer are shown separately (Declined)."
 
 algo_data <- responses |>
   filter(!is.na(Ethnicity),
@@ -1215,11 +1210,11 @@ pct_racism_desc <- n_racism_desc / nrow(responses) * 100
 
 When asked about revised race-free algorithms (@suppfig-racism-perceptions-revised-algorithms), those who had experienced racism showed greater preference for the revised versions, though more still preferred the race-specific than the revised version, except for spirometry, where `r fmt_ci(pct_racism_spiro_rf, ci_racism_spiro_rf)` preferred race-averaged GLI-Global over `r fmt_ci(pct_racism_spiro_rb, ci_racism_spiro_rb)` who preferred race-specific GLI-2012.
 
-Overall, `r n_racism_desc` participants (`r sprintf("%.1f%%", pct_racism_desc)`) shared experiences of racism in healthcare; 2 were excluded for non-substantive content and 3 for being outside healthcare. The most common instances involved differential treatment such as poorer provider attitudes or quality of care (30.0%), dismissive or neglectful behaviour (28.9%), and longer wait times or lower priority (22.2%). Participants also reported stereotypical assumptions about pain tolerance, background, lifestyle, or socioeconomic status, and attitudes towards individuals with mixed backgrounds, particularly among Indigenous respondents. The codebook (@supptab-codebook-racism), code frequencies (@supptab-codebook-freq), and example responses are in the appendix.
+Overall, `r n_racism_desc` participants (`r sprintf("%.1f%%", pct_racism_desc)`) shared experiences of racism in healthcare; 2 were excluded for non-substantive content and 3 for being outside healthcare. The most common instances involved differential treatment such as poorer provider attitudes or quality of care (30.0%), dismissive or neglectful behavior (28.9%), and longer wait times or lower priority (22.2%). Participants also reported stereotypical assumptions about pain tolerance, background, lifestyle, or socioeconomic status, and attitudes towards individuals with mixed backgrounds, particularly among Indigenous respondents. The codebook (@supptab-codebook-racism), code frequencies (@supptab-codebook-freq), and example responses are in the Supplementary Appendix.
 
 ## Discussion
 
-Our multinational survey, while not representative, captured opinions across diverse cultures and geographies, with several key findings. First, most respondents were comfortable with race or ethnicity as a predictor in clinical calculators (`r paste0(round(pct_race_comfort, 1),"%")`); this held across countries, self-identified groups, and among those who had experienced racism in healthcare. Second, across spirometry, eGFR, and cardiovascular risk calculators, 40.0% to 47.6% preferred race-specific versions, whereas 16.7% to 28.2% preferred race-free alternatives. Third, a substantial proportion did not find themselves represented in race and ethnicity categories, from `r sprintf("%.1f%%", dis_rep_frax)` for FRAX to `r sprintf("%.1f%%", dis_rep_pooled)` for pooled cohort equations. Fourth, 2.5 times as many respondents were uncomfortable with postal or ZIP code as with race or ethnicity, even though postal or ZIP code has been adopted in some revised algorithms.
+Our multinational survey, while not representative, captured opinions across diverse cultures and geographies, with several key findings. First, most respondents were comfortable with race or ethnicity as a predictor in clinical calculators (`r paste0(round(pct_race_comfort, 1),"%")`); this held across countries, self-identified groups, and among those who had experienced racism in healthcare. Second, across spirometry, eGFR, and cardiovascular risk calculators, 40.0% to 47.6% preferred race-specific versions, whereas 16.7% to 28.2% preferred race-free alternatives. Third, a substantial proportion did not find themselves represented in race and ethnicity categories, from `r sprintf("%.1f%%", dis_rep_frax)` for FRAX to `r sprintf("%.1f%%", dis_rep_pooled)` for Pooled Cohort Equations. Fourth, 2.5 times as many respondents were uncomfortable with postal or ZIP code as with race or ethnicity, even though postal or ZIP code has been adopted in some revised algorithms.
 
 Although many respondents described race or ethnicity in biological terms, its fluidity was evident in our participants' shifting self-identification with different categories. Race and ethnicity are socially determined constructs [@bonilla-silva1999] with complex biological associations [@rose2023; @holland2008]. Our findings are consistent with literature showing that recorded race or ethnicity varies with who observes it [@roth2022; @herman2010], when [@liebler2017], social status cues [@freeman2011; @saperstein2014], and the classification scheme [@nicolas2018; @harris2002], sometimes with significant consequences [@movva_coarse; @Adibi2025a].
 
@@ -1248,7 +1243,7 @@ The deidentified dataset is available on Zenodo (https://doi.org/10.5281/zenodo.
 
 The study was funded by the University of British Columbia Public Scholars Initiative and Legacy for Airway Health. AA is also supported by a University of British Columbia 4-Year Doctoral Fellowship and RESPNet BC. We thank our patient partners for sharing their feedback and insights throughout this study, and are grateful to Legacy for Airway Health, Dr. Phalgun Joshi, and Beth White for supporting patient partner engagement. We are also grateful to Dr. Kennedy Borle and Dr. Alexa Norton for their advice on ethics application and study design. The authors acknowledge that most of the activities of this research project were conducted on the traditional, ancestral, and unceded territories of the Musqueam and Kwikwetlem Nations.
 
-## Author contributions
+## Author Contributions
 
 AA conceptualized the study and secured funding. AA and KXL drafted and revised survey questionnaire with input from MS, EP, JD, and patient partners. KXL conducted interviews with patient partners. Analyses were conducted by AA, KXL, and NE. CC and JD provided clinical input and oversight. AA drafted the first version of the manuscript. All authors contributed to contextualization of the results and critical revision of the manuscript.
 
@@ -1261,7 +1256,11 @@ The authors have no competing interests to declare.
 ::: {#refs}
 :::
 
-## Additional Participants Characteristics {.appendix}
+{{< pagebreak >}}
+
+# Supplementary Appendix {.appendix .unnumbered}
+
+## Additional Participant Characteristics {.appendix}
 
 ::: {#supptab-characteristics-by-ethnicity}
 ```{r}
@@ -1333,7 +1332,7 @@ responses |>
       rows = variable == "Employment status" & label == "Not in paid work"
     ) |>
     modify_footnote_body(
-      footnote = "Regions classified according to the United Nations M49 standard (https://unstats.un.org/unsd/methodology/m49/).",
+      footnote = "Regions classified according to the United Nations M49 standard.",
       columns = "label",
       rows = variable == "Region of residence" & row_type == "label"
     ) |>
@@ -1421,7 +1420,7 @@ upset(ethnicity_matrix,
       sets.x.label = "Total Selections")
 ```
 
-Intersection analysis of self-reported ethnic identities among survey respondents. Horizontal bars (left) show the total number of respondents selecting each ethnicity. Vertical bars (top) show the frequency of each unique combination of ethnicities, ordered by size. Connected dots indicate multi-ethnic identifications. Overall, `r sprintf("%.1f%%", mean(rowSums(ethnicity_matrix) >= 2) * 100)` of respondents selected two or more ethnic categories, reflecting the multi-dimensional nature of ethnic identity.
+Intersection analysis of self-reported ethnic identities among survey respondents. Horizontal bars (left) show the total number of respondents selecting each ethnicity. Vertical bars (top) show the frequency of each unique combination of ethnicities, ordered by size. Connected dots indicate multiethnic identifications. Overall, `r sprintf("%.1f%%", mean(rowSums(ethnicity_matrix) >= 2) * 100)` of respondents selected two or more ethnic categories, reflecting the multidimensional nature of ethnic identity.
 :::
 
 ::: {#suppfig-ethnicity-concordance}
@@ -1777,7 +1776,7 @@ ggplot(likert_diverging_unfair, aes(y = algorithm, xmin = xmin, xmax = xmax, fil
         strip.text = element_text(size = 11))
 ```
 
-Respondent reactions to race-specific algorithms among those who reported unfair treatment due to race/ethnicity. Bars extend rightward for agreement (light and dark blue) and leftward for disagreement (light and dark red), with neutral responses (yellow) centred at zero. Net agreement (total percentage agreeing minus total percentage disagreeing) is shown to the right of each bar.
+Respondent reactions to race-specific algorithms among those who reported unfair treatment due to race/ethnicity. Bars extend rightward for agreement (light and dark blue) and leftward for disagreement (light and dark red), with neutral responses (yellow) centered at zero. Net agreement (total percentage agreeing minus total percentage disagreeing) is shown to the right of each bar.
 :::
 
 ::: {#suppfig-racism-perceptions-revised-algorithms}
@@ -1942,7 +1941,7 @@ ggplot(comfort_plot_selfeth, aes(y = SelfEthnicity, xmin = xmin, xmax = xmax, fi
         panel.grid.major.y = element_blank())
 ```
 
-Comfort with race/ethnicity, country of origin, and ZIP or postal code as calculator factors, compared across self-reported ethnicity groups (multiple selections allowed). Respondents who selected multiple ethnicities are counted in each group they identified with. Ethnicity groups are ordered from least to most comfortable with race/ethnicity. Bars extend rightward for comfortable responses and leftward for uncomfortable responses, with neutral responses centred at zero. Net comfort is shown to the right of each bar.
+Comfort with race/ethnicity, country of origin, and ZIP or postal code as calculator factors, compared across self-reported ethnicity groups (multiple selections allowed). Respondents who selected multiple ethnicities are counted in each group they identified with. Ethnicity groups are ordered from least to most comfortable with race/ethnicity. Bars extend rightward for comfortable responses and leftward for uncomfortable responses, with neutral responses centered at zero. Net comfort is shown to the right of each bar.
 :::
 
 ::: {#suppfig-ethnicity-comfort-factor}
@@ -2047,7 +2046,7 @@ ggplot(comfort_plot_eth, aes(y = Ethnicity, xmin = xmin, xmax = xmax, fill = com
         panel.grid.major.y = element_blank())
 ```
 
-Comfort with race/ethnicity, country of origin, and ZIP or postal code as calculator factors, compared across ethnicity groups (Prolific platform categories). Ethnicity groups are ordered from least to most comfortable with race/ethnicity. Bars extend rightward for comfortable responses and leftward for uncomfortable responses, with neutral responses centred at zero. Net comfort is shown to the right of each bar.
+Comfort with race/ethnicity, country of origin, and ZIP or postal code as calculator factors, compared across ethnicity groups (Prolific platform categories). Ethnicity groups are ordered from least to most comfortable with race/ethnicity. Bars extend rightward for comfortable responses and leftward for uncomfortable responses, with neutral responses centered at zero. Net comfort is shown to the right of each bar.
 :::
 
 ::: {#suppfig-never-use-by-ethnicity}
@@ -2168,7 +2167,7 @@ library(patchwork)
 p_never_self / p_never_prolific
 ```
 
-Agreement with the statement that doctors should never use race or ethnicity in clinical algorithms, by self-reported ethnicity (top, multiple selections allowed) and Prolific platform ethnicity (bottom). Bars extend rightward for agreement and leftward for disagreement, with neutral responses centred at zero. Net agreement is shown to the right of each bar.
+Agreement with the statement that doctors should never use race or ethnicity in clinical algorithms, by self-reported ethnicity (top, multiple selections allowed) and Prolific platform ethnicity (bottom). Bars extend rightward for agreement and leftward for disagreement, with neutral responses centered at zero. Net agreement is shown to the right of each bar.
 :::
 
 ::: {#suppfig-country-comfort-factor}
@@ -2281,7 +2280,7 @@ ggplot(comfort_plot_country, aes(y = `Country of residence`, xmin = xmin, xmax =
         panel.grid.major.y = element_blank())
 ```
 
-Comfort with race/ethnicity, country of origin, and ZIP or postal code as calculator factors, compared across countries of residence (countries with at least 20 respondents). Countries are ordered from least to most comfortable with race/ethnicity. Bars extend rightward for comfortable responses and leftward for uncomfortable responses, with neutral responses centred at zero. Net comfort is shown to the right of each bar.
+Comfort with race/ethnicity, country of origin, and ZIP or postal code as calculator factors, compared across countries of residence (countries with at least 20 respondents). Countries are ordered from least to most comfortable with race/ethnicity. Bars extend rightward for comfortable responses and leftward for uncomfortable responses, with neutral responses centered at zero. Net comfort is shown to the right of each bar.
 :::
 
 ## Race or Ethnicity Questions During Healthcare Encounters by Ethnicity and Country of Residence {#sec-healthcare-encounters .appendix}
@@ -2755,7 +2754,7 @@ comfort_comparison <- bind_rows(diao_comfort, our_comfort_all, our_comfort_us) |
     factor = factor(factor, levels = factor_order)
   )
 
-# Build diverging positions: uncomfortable left, neither centred, comfortable right
+# Build diverging positions: uncomfortable left, neither centered, comfortable right
 comfort_plot <- comfort_comparison |>
   group_by(factor, source) |>
   mutate(
@@ -2802,7 +2801,7 @@ ggplot(comfort_plot, aes(y = source, xmin = xmin, xmax = xmax, fill = level)) +
         panel.grid.major.y = element_blank())
 ```
 
-Comparison of comfort with the use of demographic factors in a hypothetical risk calculator between our survey (all respondents and US residents only) and a representative US sample from Diao et al. Bars extend rightward for comfortable responses (blue) and leftward for uncomfortable responses (red), with neutral responses (grey) centred at zero. Net comfort is shown to the right of each bar. Responses were collapsed into three categories to match the reporting in Diao et al.
+Comparison of comfort with the use of demographic factors in a hypothetical risk calculator between our survey (all respondents and US residents only) and a representative US sample from Diao et al. Bars extend rightward for comfortable responses (blue) and leftward for uncomfortable responses (red), with neutral responses (grey) centered at zero. Net comfort is shown to the right of each bar. Responses were collapsed into three categories to match the reporting in Diao et al.
 :::
 
 ::: {#suppfig-rep-diao-agreement}
@@ -2871,7 +2870,7 @@ agree_comparison <- bind_rows(diao_agree, our_agree_all, our_agree_us) |>
     statement = factor(statement, levels = diao_labels)
   )
 
-# Build diverging positions: disagree left, neither centred, agree right
+# Build diverging positions: disagree left, neither centered, agree right
 agree_plot <- agree_comparison |>
   group_by(statement, source) |>
   mutate(
@@ -2918,7 +2917,7 @@ ggplot(agree_plot, aes(y = source, xmin = xmin, xmax = xmax, fill = level)) +
         panel.grid.major.y = element_blank())
 ```
 
-Comparison of agreement with statements about the use of race or ethnicity in clinical care between our survey (all respondents and US residents only) and a representative US sample from Diao et al. The first three statements are prefixed with "I am comfortable with my doctor using my race or ethnicity in clinical care..." Bars extend rightward for agreement (blue) and leftward for disagreement (red), with neutral responses (grey) centred at zero. Net agreement is shown to the right of each bar. Responses were collapsed into three categories to match the reporting in Diao et al.
+Comparison of agreement with statements about the use of race or ethnicity in clinical care between our survey (all respondents and US residents only) and a representative US sample from Diao et al. The first three statements are prefixed with "I am comfortable with my doctor using my race or ethnicity in clinical care..." Bars extend rightward for agreement (blue) and leftward for disagreement (red), with neutral responses (grey) centered at zero. Net agreement is shown to the right of each bar. Responses were collapsed into three categories to match the reporting in Diao et al.
 :::
 
 ## Qualitative Codebooks {#sec-codebooks .appendix}
@@ -2926,10 +2925,9 @@ Comparison of agreement with statements about the use of race or ethnicity in cl
 The codebooks below were developed via conventional content analysis of three open-ended survey questions. Two reviewers independently developed and iteratively refined a shared codebook through open coding, then independently applied the codebook to 10% of responses to ensure consistency. Discrepancies were resolved through discussion and consensus, and the remaining responses were coded by one reviewer using the final codebook.
 
 ::: {#supptab-codebook-race}
-|  |  |  |
-|:-----------------:|:----------------------------:|:---------------------:|
 | Category | Description | Example(s) |
-| Physical traits | Responses referring to physical traits or characteristics, such as skin colour. | *"Colour of your skin"*; *"Race or ethnicity distinguishes people based on complexion. When a person appears darker, they are black"* |
+|:-----------------------|:-----------------------|:-----------------------|
+| Physical traits | Responses referring to physical traits or characteristics, such as skin color. | *"Colour of your skin"*; *"Race or ethnicity distinguishes people based on complexion. When a person appears darker, they are black"* |
 | Ancestry, heritage or lineage | References to ancestry, heritage, or lineage, including where one's ancestors are from. | *"Race or ethnicity refers to ones \[one's\] heritage and bloodline"*; *"To me ethnicity mean\[s\] what region of the world did your ancestors immigrate from"* |
 | Cultural or historical background | References to culture, including cultural background or shared culture, as well as historical background or context. | *"A characterization of people based on having a shared culture"*; *"Your history, what makes you who you are"*; *"It means shared history and culture that shape how people are seen"* |
 | Biology or genetics | Responses referring to biology, biological characteristics, genes, DNA, or genetic background/characteristics/makeup. | *"Race or ethnicity means my genetic makeup, not where I was born or raised"*; *"Its \[it is\] biological form of identity"* |
@@ -2938,7 +2936,7 @@ The codebooks below were developed via conventional content analysis of three op
 | Community and belonging | Reference to belonging to a community or a group of people. | *"A group someone belongs to"*; *"To belong in a human social group"* |
 | Social construct | Referred to race and/or ethnicity as a social construct. | *"Social constructs used to categorize human diversity based on different criteria"* |
 | Distinguishes between race and ethnicity | Race and ethnicity were defined and acknowledged as separate concepts. | *"Race means your colour but ethnicity is where you're from"*; *"Race is about physical traits, ethnicity is about cultural identity"* |
-| Critique or rejection of race | Responses that explicitly questioned, critiqued, or rejected the concept of race by describing it as meaningless, outdated, or harmful. | *"Race means nothing to me because I don't believe in separate races. There is only one race... Human"*; *"It is an outdated term that continues to be used to group people (often in a discriminatory way)";* |
+| Critique or rejection of race | Responses that explicitly questioned, critiqued, or rejected the concept of race by describing it as meaningless, outdated, or harmful. | *"Race means nothing to me because I don't believe in separate races. There is only one race... Human"*; *"It is an outdated term that continues to be used to group people (often in a discriminatory way)"* |
 | Medical relevance | Responses describing race and/or ethnicity with respect to medical or clinical relevance or considerations. | *"My kind of body and maybe some sickness that maybe I have"* |
 
 Codebook for the open-ended question, "In your own words, what does 'race or ethnicity' mean to you? There are no right or wrong answers — we are interested in your personal perspective."
@@ -2949,9 +2947,9 @@ Codebook for the open-ended question, "In your own words, what does 'race or eth
 |:-----------------------|:-----------------------|:-----------------------|
 | Longer wait time or low priority | References to receiving delayed care, such as having to wait longer or being assigned a lower priority. | *"Put to the back of the line, not treated with urgency"*; *"It's just that they prioritize white people even though we are the first in line"* |
 | Differential treatment | Responses referring to being treated or cared for differently, including experiences of poor tone or attitude, poorer quality of care, unfair treatment, racial categorization or profiling based on appearance, and provider knowledge gap that could result in differential access to care. | *"Race plays a big part in how you are treated as a patient here in Canada. There is differential care"*; *"I sometimes felt like quality or more accessible medical assistance were offered to people who had a different race than me"*; *"Took my son to the ER with an allergic reaction that had morphed to a full body rash in hours. We were told by the doctor she was not used to dark skin so couldn't identify what was happening"* |
-| Dismissive or neglectful behaviour | Stating that physicians or other providers dismissed, minimized, or did not listen to their concerns, as well as experiencing missed or delayed diagnosis or rushed consultation. | *"I have been to the hospital to have my 3 kids. I have felt 'looked over' and dismissed by the white doctors and had to strongly rebut and stand up for myself. I do feel it had to do with my race"*; *"The doctors (mid-wife) did not take my health concerns seriously and dismissed me"* |
+| Dismissive or neglectful behavior | Stating that physicians or other providers dismissed, minimized, or did not listen to their concerns, as well as experiencing missed or delayed diagnosis or rushed consultation. | *"I have been to the hospital to have my 3 kids. I have felt 'looked over' and dismissed by the white doctors and had to strongly rebut and stand up for myself. I do feel it had to do with my race"*; *"The doctors (mid-wife) did not take my health concerns seriously and dismissed me"* |
 | Physiological assumption or stereotyping | Mentioned experiencing presumptions or stereotypes based on physiological or biological factors such as pain tolerance or different risk for certain diseases. | *"Some doctors think black people are more tolerant to pain"*; *"A doctor remarked the chances of a black person getting prostate cancer was higher compared to that of a white individual"* |
-| Social or behavioural assumption or stereotyping | Mentioned experiencing presumptions or stereotypes based on social or behavioural factors such as socioeconomic status, education level, lifestyle, or behaviour. | *"Certain medical staff just think because you aren't caucasian, that you are uneducated when it comes down to medical matters"* |
+| Social or behavioral assumption or stereotyping | Mentioned experiencing presumptions or stereotypes based on social or behavioral factors such as socioeconomic status, education level, lifestyle, or behavior. | *"Certain medical staff just think because you aren't caucasian, that you are uneducated when it comes down to medical matters"* |
 | Explicit discrimination | Responses mentioning explicit verbal discrimination or racist comments. | *"I was living in a different country and I had to have a surgery and my surgeon kept making racist remarks that made me feel very uncomfortable. Same happened with another doctor who told my son off for speaking with an accent"* |
 | Expressed emotional discomfort | Expressed feelings or emotions about their experiences, such as discomfort or having difficulty talking about them. | *"Difficult to talk about these experiences sorry"* |
 
@@ -2986,7 +2984,7 @@ Codebook for the open-ended question, "Do you have any additional thoughts or co
 ::: {#supptab-codebook-freq}
 | Category | n | \% |
 |:-----------------------|-----------------------:|-----------------------:|
-| **In your own words, what does "race or ethnicity" mean to you? There are no right or wrong answers — we are interested in your personal perspective. (total responses analyzed = 993)** |  |  |
+| **In your own words, what does 'race or ethnicity' mean to you? There are no right or wrong answers — we are interested in your personal perspective. (total responses analyzed = 993)** |  |  |
 | Physical traits | 370 | 37.3% |
 | Ancestry, heritage or lineage | 226 | 22.8% |
 | Cultural or historical background | 293 | 29.5% |
@@ -3001,9 +2999,9 @@ Codebook for the open-ended question, "Do you have any additional thoughts or co
 | **Have you ever felt that you were treated unfairly in the healthcare system because of your race or ethnicity? (total responses analyzed = 90)** |  |  |
 | Longer wait time or low priority | 20 | 22.2% |
 | Differential treatment | 27 | 30.0% |
-| Dismissive or neglectful behaviour | 26 | 28.9% |
+| Dismissive or neglectful behavior | 26 | 28.9% |
 | Physiological assumption or stereotyping | 15 | 16.7% |
-| Social or behavioural assumption or stereotyping | 7 | 7.8% |
+| Social or behavioral assumption or stereotyping | 7 | 7.8% |
 | Explicit discrimination | 6 | 6.7% |
 | Expressed emotional discomfort | 5 | 5.6% |
 | **Do you have any additional thoughts or concerns to share? (total responses analyzed = 215)** |  |  |
@@ -3033,7 +3031,7 @@ Frequency of codes and categories identified across open-ended responses. *n* re
 
 ### Defining Race or Ethnicity {#sec-quote-race .appendix}
 
-The excerpts below are drawn from participant responses to the following open-ended question: "In your own words, what does "race or ethnicity" mean to you? There are no right or wrong answers - we are interested in your personal perspective."
+The excerpts below are drawn from participant responses to the following open-ended question: "In your own words, what does 'race or ethnicity' mean to you? There are no right or wrong answers — we are interested in your personal perspective."
 
 > "For me, race is my physical traits, how do I look. Ethnicity is my heritage, how do I feel. For example, I am Southeast Asian with light brown skin, black hair, light brown eyes. My mom's ethnicity is Batak Simalungun, while my dad's is Batak Tapanuli. I was raised in Simalungun and spent half of my life here. So, I considered my ethnicity as a Simalungunese, although my surname is from Tapanuli."
 
