@@ -8,12 +8,12 @@ Reproducibility repository for the paper:
 
 ## Overview
 
-This repository contains the Quarto source needed to reproduce all tables, figures, and statistics reported in the manuscript. The de-identified survey dataset is archived on Zenodo at <https://zenodo.org/records/20403996> and is downloaded automatically when the manuscript is rendered. The study is a cross-sectional, multinational opt-in online survey (January 2026, n=994 eligible respondents from 43 countries) assessing public opinion on the use of race and ethnicity in clinical algorithms.
+This repository contains the Quarto source needed to reproduce all tables, figures, and statistics reported in the manuscript, except median age, which was computed from continuous age that is not included in the de-identified dataset. The de-identified survey dataset is archived on Zenodo at <https://zenodo.org/records/20403996> and is downloaded automatically when the manuscript is rendered. The study is a cross-sectional, multinational opt-in online survey (January 2026, n=994 eligible respondents from 43 countries) assessing public opinion on the use of race and ethnicity in clinical algorithms.
 
 ## Requirements
 
 - [R](https://www.r-project.org/) (>= 4.5.2)
-- [Quarto](https://quarto.org/) (>= 1.9.36)
+- [Quarto](https://quarto.org/) (>= 1.10.18)
 - R packages: `tidyverse`, `ggthemes`, `gtsummary`, `flextable`, `ggalluvial`, `patchwork`, `UpSetR`
 
 Install the required R packages:
