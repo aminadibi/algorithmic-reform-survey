@@ -988,7 +988,7 @@ ggplot(comfort_plot, aes(y = factor, xmin = xmin, xmax = xmax, fill = comfort)) 
             size = 3) +
   geom_text(data = net_labels,
             aes(x = x_end + 2, y = factor, label = sprintf("%+.1f%%", net)),
-            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+            inherit.aes = FALSE, size = 4.5, hjust = 0) +
   geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
   scale_fill_manual(
     values = c(
@@ -1004,10 +1004,10 @@ ggplot(comfort_plot, aes(y = factor, xmin = xmin, xmax = xmax, fill = comfort)) 
   scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
                      expand = expansion(mult = c(0.05, 0.12))) +
   labs(x = NULL, y = NULL) +
-  theme_minimal() +
-  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
+  theme_minimal(base_size = 14) +
+  guides(fill = guide_legend(nrow = 3, byrow = TRUE)) +
   theme(legend.position = "top",
-        legend.text = element_text(size = 8))
+        legend.text = element_text(size = 12))
 ```
 
 {{< pagebreak >}}
@@ -1175,7 +1175,7 @@ legend_breaks <- c(
 pref_key <- tibble(
   algorithm = factor("FRAX", levels = algo_levels),
   dimension = factor("Preference for revised version", levels = all_dim_levels),
-  x         = c(-25, 0, 25),
+  x         = c(-35, 0, 35),
   label     = c("Prefer race-based", "Neutral / Unsure", "Prefer revised version"),
   hex       = c("#d73027", "#8c7d2b", "#4575b4")
 )
@@ -1196,24 +1196,25 @@ ggplot(combined_diverging, aes(y = algorithm, xmin = xmin, xmax = xmax, fill = r
   geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
   geom_text(data = net_labels_combined,
             aes(x = x_end + 1, y = algorithm, label = sprintf("%+.1f%%", net)),
-            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+            inherit.aes = FALSE, size = 4.5, hjust = 0) +
   geom_text(data = pref_key,
             aes(x = x, y = algorithm, label = label, color = hex),
-            inherit.aes = FALSE, size = 3, fontface = "italic") +
+            inherit.aes = FALSE, size = 4, fontface = "italic") +
   facet_wrap(~ dimension, ncol = 1, labeller = labeller(dimension = dimension_labels)) +
   scale_fill_manual(
     values = combined_hex,
     breaks = legend_breaks,
-    guide  = guide_legend(nrow = 1)
+    guide  = guide_legend(nrow = 2, byrow = TRUE)
   ) +
   scale_color_identity() +
   scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
                      expand = expansion(mult = c(0.05, 0.15))) +
   labs(x = "Percent", y = NULL, fill = NULL) +
-  theme_minimal() +
+  theme_minimal(base_size = 14) +
   theme(legend.position = "top",
         panel.grid.major.y = element_blank(),
-        strip.text = element_text(size = 11))
+        legend.text = element_text(size = 12),
+        strip.text = element_text(size = 15))
 ```
 
 {{< pagebreak >}}
@@ -1254,8 +1255,8 @@ ggplot(algo_data,
   geom_alluvium(aes(fill = prolific_ethnicity), width = 1/4, alpha = 0.7, discern = TRUE) +
   geom_stratum(width = 1/4, fill = "white", color = "grey70", linewidth = 0.1, discern = TRUE) +
   geom_text(stat = "stratum", discern = TRUE,
-            aes(label = after_stat(stringr::str_wrap(sub("\\.[0-9]+$", "", as.character(stratum)), width = 12))),
-            size = 2.5) +
+            aes(label = after_stat(stringr::str_wrap(sub("\\.[0-9]+$", "", as.character(stratum)), width = 10))),
+            size = 3) +
   scale_x_discrete(limits = c( "Prolific Ethnicity\n(single choice)",
                                "Spirometry\n(GLI)",
                                "eGFR",
@@ -1263,7 +1264,7 @@ ggplot(algo_data,
                    expand = c(0.15, 0.05)) +
   scale_fill_manual(values = prolific_eth_colors, guide = "none") +
   labs(y = "Number of respondents") +
-  theme_minimal() +
+  theme_minimal(base_size = 16) +
   theme(
     axis.text.y = element_blank(),
     axis.ticks = element_blank(),
