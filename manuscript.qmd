@@ -145,7 +145,7 @@ Here, we report a multinational survey on race or ethnicity and algorithmic refo
 
 The questionnaire was iteratively drafted with feedback from six graduate students and three faculty members in epidemiology, medicine, clinical prediction, and algorithmic fairness, then revised further after pretesting via cognitive interviews with two patient partners. The exact wording of the questionnaire is in the Supplementary Appendix.
 
-After a plain-language explainer about clinical calculators, the questionnaire presented four calculators reflecting different reform approaches in randomized order: refitting without race (eGFR), race‑averaged reference values (spirometry), replacing race with an area‑based deprivation score from postal codes (PREVENT), and retaining race or ethnicity (FRAX). For each, we asked whether participants felt represented by its categories, whether using race or ethnicity could improve their care, and whether they worried it might cause harm, using Likert‑scale items with randomized response direction. After all four sections, participants saw the race-free version (where available) and chose which they preferred.
+After a plain-language explainer about clinical calculators, the questionnaire presented four calculators reflecting different reform approaches in randomized order: refitting without race (eGFR), race‑averaged reference values (spirometry), replacing race with an area‑based deprivation score from postal codes (PREVENT), and retaining race or ethnicity (FRAX). For each, we asked whether participants felt represented by its categories, whether using race or ethnicity could improve their care, and whether they worried it might cause harm, using Likert‑scale items with randomized response direction. After each section, participants saw the race-free version (where available) and chose which they preferred.
 
 Comfort with different predictors was assessed via a hypothetical cancer risk calculator, with five-point ratings for: home postal or ZIP code, race or ethnicity, genetic ancestry, biological sex, country of origin, age, and environmental exposures.
 
@@ -1579,7 +1579,7 @@ char_df |>
     as_flex_table()
 ```
 
-Characteristics of survey participants who reported unfair treatment due to race/ethnicity. Self-reported ethnicity categories are not mutually exclusive, as respondents could select multiple identities.
+Characteristics of survey participants by whether they reported ever being treated unfairly in healthcare because of their race or ethnicity ("No" includes participants who answered Unsure or Prefer not to say). Ethnicity rows reflect the self-reported multi-select survey item; categories are not mutually exclusive, as respondents could select multiple identities.
 
 :::
 

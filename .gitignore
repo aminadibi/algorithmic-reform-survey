@@ -52,3 +52,4 @@ rsconnect/
 *.csv
 manuscript.html
 /manuscript_files
+.DS_Store
