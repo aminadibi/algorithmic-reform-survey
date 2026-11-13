@@ -1253,15 +1253,24 @@ ggplot(algo_data,
            axis3 = egfr_race, axis4 = cvd_race,
            y = n)) +
   geom_alluvium(aes(fill = prolific_ethnicity), width = 1/4, alpha = 0.7, discern = TRUE) +
-  geom_stratum(width = 1/4, fill = "white", color = "grey70", linewidth = 0.1, discern = TRUE) +
-  geom_text(stat = "stratum", discern = TRUE,
-            aes(label = after_stat(stringr::str_wrap(sub("\\.[0-9]+$", "", as.character(stratum)), width = 10))),
+  # No boxes on the first (Prolific) axis: its coloured flow ends mark the categories
+  geom_stratum(aes(alpha = after_stat(ifelse(x == 1, 0, 1)),
+                   color = after_stat(ifelse(x == 1, NA, "grey70"))),
+               width = 1/4, fill = "white", linewidth = 0.1, discern = TRUE) +
+  # First axis: single-line labels placed to the left of the column
+  geom_text(stat = "stratum", discern = TRUE, na.rm = TRUE,
+            aes(label = after_stat(ifelse(x == 1, sub("\\.[0-9]+$", "", as.character(stratum)), NA))),
+            size = 3.5, hjust = 1, nudge_x = -1/8 - 0.03) +
+  geom_text(stat = "stratum", discern = TRUE, na.rm = TRUE,
+            aes(label = after_stat(ifelse(x == 1, NA, stringr::str_wrap(sub("\\.[0-9]+$", "", as.character(stratum)), width = 10)))),
             size = 3) +
+  scale_alpha_identity() +
+  scale_color_identity() +
   scale_x_discrete(limits = c( "Prolific Ethnicity\n(single choice)",
                                "Spirometry\n(GLI)",
                                "eGFR",
                                "CVD (Pooled Cohort)"),
-                   expand = c(0.15, 0.05)) +
+                   expand = expansion(add = c(1.05, 0.4))) +
   scale_fill_manual(values = prolific_eth_colors, guide = "none") +
   labs(y = "Number of respondents") +
   theme_minimal(base_size = 16) +
