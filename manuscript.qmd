@@ -1372,7 +1372,7 @@ responses |>
   coord_flip() +
   scale_y_continuous(expand = expansion(mult = c(0, 0.18))) +
   labs(x = NULL, y = "Count") +
-  theme_minimal()
+  theme_minimal(base_size = 14)
 ```
 
 Respondents' Country of Residence (Top 30)
@@ -1392,7 +1392,7 @@ responses |>
   coord_flip() +
   scale_y_continuous(expand = expansion(mult = c(0, 0.18))) +
   labs(x = NULL, y = "Count") +
-  theme_minimal()
+  theme_minimal(base_size = 14)
 ```
 
 Respondents' Country of Birth (Top 30)
@@ -1481,9 +1481,9 @@ ggplot(heatmap_data, aes(x = survey_ethnicity, y = prolific_ethnicity, fill = pc
   scale_fill_gradient(low = "white", high = "#2166ac",
                       name = "Row %",
                       limits = c(0, 100)) +
-  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 30)) +
   labs(x = "Survey ethnicity (multi-select)", y = "Prolific ethnicity (single-choice)") +
-  theme_minimal() +
+  theme_minimal(base_size = 14) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     panel.grid = element_blank()
@@ -1671,7 +1671,7 @@ ggplot(comfort_plot_unfair, aes(y = factor, xmin = xmin, xmax = xmax, fill = com
             size = 3) +
   geom_text(data = net_labels_unfair,
             aes(x = x_end + 2, y = factor, label = sprintf("%+.1f%%", net)),
-            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+            inherit.aes = FALSE, size = 4.5, hjust = 0) +
   geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
   scale_fill_manual(
     values = c(
@@ -1687,10 +1687,10 @@ ggplot(comfort_plot_unfair, aes(y = factor, xmin = xmin, xmax = xmax, fill = com
   scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
                      expand = expansion(mult = c(0.05, 0.12))) +
   labs(x = NULL, y = NULL) +
-  theme_minimal() +
-  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
+  theme_minimal(base_size = 14) +
+  guides(fill = guide_legend(nrow = 3, byrow = TRUE)) +
   theme(legend.position = "top",
-        legend.text = element_text(size = 8))
+        legend.text = element_text(size = 12))
 ```
 
 Comfort with calculator factors among respondents who reported unfair treatment due to race/ethnicity.
@@ -1771,7 +1771,7 @@ ggplot(likert_diverging_unfair, aes(y = algorithm, xmin = xmin, xmax = xmax, fil
   geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
   geom_text(data = net_labels_likert_unfair,
             aes(x = x_end + 2, y = algorithm, label = sprintf("%+.1f%%", net)),
-            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+            inherit.aes = FALSE, size = 4.5, hjust = 0) +
   facet_wrap(~ dimension, ncol = 1, labeller = labeller(dimension = dimension_labels)) +
   scale_fill_manual(
     values = c(
@@ -1781,14 +1781,15 @@ ggplot(likert_diverging_unfair, aes(y = algorithm, xmin = xmin, xmax = xmax, fil
       "Somewhat agree" = "#91bfdb",
       "Strongly agree" = "#4575b4"
     ),
-    guide = guide_legend(nrow = 1)
+    guide = guide_legend(nrow = 2, byrow = TRUE)
   ) +
-  scale_x_continuous(labels = \(x) paste0(abs(x), "%")) +
+  scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
+                     expand = expansion(mult = c(0.05, 0.12))) +
   labs(x = "Percent", y = NULL, fill = NULL) +
-  theme_minimal() +
+  theme_minimal(base_size = 14) +
   theme(legend.position = "bottom",
         panel.grid.major.y = element_blank(),
-        strip.text = element_text(size = 11))
+        strip.text = element_text(size = 14))
 ```
 
 Respondent reactions to race-specific algorithms among those who reported unfair treatment due to race/ethnicity. Bars extend rightward for agreement (light and dark blue) and leftward for disagreement (light and dark red), with neutral responses (yellow) centered at zero. Net agreement (total percentage agreeing minus total percentage disagreeing) is shown to the right of each bar.
@@ -1818,7 +1819,7 @@ bind_rows(
   scale_fill_manual(values = c("Prefer race-based" = "salmon", "Neutral/Unsure" = "lightgoldenrod",
                                "Prefer race-free" = "steelblue2", "Other" = "gray70", "Prefer postal-ZIP instead of race" = "steelblue")) +
   labs(y = NULL, x = "Percent", fill = NULL) +
-  theme_minimal() +
+  theme_minimal(base_size = 14) +
   theme(legend.position = "bottom",
         panel.grid.major.y = element_blank())
 ```
@@ -1832,7 +1833,7 @@ Respondent reactions to revised algorithms among those who reported unfair treat
 ```{r}
 #| label: suppfig-ethnicity-self-comfort-factor
 #| fig-width: 10
-#| fig-height: 8
+#| fig-height: 10
 
 factors_to_show <- c("Race/ethnicity", "Country of origin", "ZIP or Postal Code")
 
@@ -1843,7 +1844,7 @@ ethnicity_categories <- c(
   "East Asian" = "East Asian",
   "Hispanic/Latino" = "Hispanic",
   "Indigenous" = "Indigenous",
-  "Middle Eastern/\nNorth African" = "Middle Eastern",
+  "Middle Eastern/North African" = "Middle Eastern",
   "South Asian" = "(?<!east )South Asian",
   "Southeast Asian" = "Southeast Asian",
   "White" = "White"
@@ -1931,7 +1932,7 @@ ggplot(comfort_plot_selfeth, aes(y = SelfEthnicity, xmin = xmin, xmax = xmax, fi
             size = 2.5) +
   geom_text(data = net_labels_selfeth,
             aes(x = x_end + 2, y = SelfEthnicity, label = sprintf("%+.1f%%", net)),
-            inherit.aes = FALSE, size = 3, hjust = 0) +
+            inherit.aes = FALSE, size = 4, hjust = 0) +
   geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
   scale_fill_manual(
     values = c(
@@ -1948,11 +1949,11 @@ ggplot(comfort_plot_selfeth, aes(y = SelfEthnicity, xmin = xmin, xmax = xmax, fi
                      expand = expansion(mult = c(0.05, 0.15))) +
   facet_wrap(~ factor(factor, levels = factors_to_show), ncol = 1) +
   labs(x = NULL, y = NULL) +
-  theme_minimal() +
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme_minimal(base_size = 14) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
   theme(legend.position = "top",
-        legend.text = element_text(size = 8),
-        strip.text = element_text(size = 11, face = "bold"),
+        legend.text = element_text(size = 12),
+        strip.text = element_text(size = 14, face = "bold"),
         panel.grid.major.y = element_blank())
 ```
 
@@ -2036,7 +2037,7 @@ ggplot(comfort_plot_eth, aes(y = Ethnicity, xmin = xmin, xmax = xmax, fill = com
             size = 2.5) +
   geom_text(data = net_labels_eth,
             aes(x = x_end + 2, y = Ethnicity, label = sprintf("%+.0f%%", net)),
-            inherit.aes = FALSE, size = 3, hjust = 0) +
+            inherit.aes = FALSE, size = 4, hjust = 0) +
   geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
   scale_fill_manual(
     values = c(
@@ -2053,11 +2054,11 @@ ggplot(comfort_plot_eth, aes(y = Ethnicity, xmin = xmin, xmax = xmax, fill = com
                      expand = expansion(mult = c(0.05, 0.15))) +
   facet_wrap(~ factor(factor, levels = factors_to_show), ncol = 1) +
   labs(x = NULL, y = NULL) +
-  theme_minimal() +
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme_minimal(base_size = 14) +
+  guides(fill = guide_legend(nrow = 3, byrow = TRUE)) +
   theme(legend.position = "top",
-        legend.text = element_text(size = 8),
-        strip.text = element_text(size = 11, face = "bold"),
+        legend.text = element_text(size = 12),
+        strip.text = element_text(size = 14, face = "bold"),
         panel.grid.major.y = element_blank())
 ```
 
@@ -2131,7 +2132,7 @@ make_never_use_diverging <- function(df, group_col) {
               size = 2.5) +
     geom_text(data = net_labels,
               aes(x = x_end + 2, y = !!sym(group_col), label = sprintf("%+.1f%%", net)),
-              inherit.aes = FALSE, size = 3, hjust = 0) +
+              inherit.aes = FALSE, size = 4, hjust = 0) +
     geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
     scale_fill_manual(
       values = c(
@@ -2147,7 +2148,7 @@ make_never_use_diverging <- function(df, group_col) {
     scale_x_continuous(labels = \(x) paste0(abs(x), "%"),
                        expand = expansion(mult = c(0.05, 0.15))) +
     labs(x = NULL, y = NULL) +
-    theme_minimal() +
+    theme_minimal(base_size = 14) +
     theme(panel.grid.major.y = element_blank())
 }
 
@@ -2166,8 +2167,8 @@ never_use_selfeth_df <- responses |>
 
 p_never_self <- make_never_use_diverging(never_use_selfeth_df, "SelfEthnicity") +
   labs(subtitle = "By self-reported ethnicity (multiple selections allowed)") +
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
-  theme(legend.position = "top", legend.text = element_text(size = 8))
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
+  theme(legend.position = "top", legend.text = element_text(size = 12))
 
 # --- Panel B: by Prolific ethnicity ---
 never_use_prolific_df <- responses |>
@@ -2270,7 +2271,7 @@ ggplot(comfort_plot_country, aes(y = `Country of residence`, xmin = xmin, xmax =
             size = 2.5) +
   geom_text(data = net_labels_country,
             aes(x = x_end + 2, y = `Country of residence`, label = sprintf("%+.0f%%", net)),
-            inherit.aes = FALSE, size = 3, hjust = 0) +
+            inherit.aes = FALSE, size = 4, hjust = 0) +
   geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
   scale_fill_manual(
     values = c(
@@ -2287,11 +2288,11 @@ ggplot(comfort_plot_country, aes(y = `Country of residence`, xmin = xmin, xmax =
                      expand = expansion(mult = c(0.05, 0.15))) +
   facet_wrap(~ factor(factor, levels = factors_to_show), ncol = 1) +
   labs(x = NULL, y = NULL) +
-  theme_minimal() +
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme_minimal(base_size = 14) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
   theme(legend.position = "top",
-        legend.text = element_text(size = 8),
-        strip.text = element_text(size = 11, face = "bold"),
+        legend.text = element_text(size = 12),
+        strip.text = element_text(size = 14, face = "bold"),
         panel.grid.major.y = element_blank())
 ```
 
@@ -2359,10 +2360,10 @@ ggplot(how_often_plot_selfeth,
   scale_x_continuous(labels = \(x) paste0(x, "%"),
                      limits = c(0, 100), breaks = seq(0, 100, 25)) +
   labs(x = NULL, y = NULL) +
-  theme_minimal() +
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme_minimal(base_size = 14) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
   theme(legend.position = "top",
-        legend.text = element_text(size = 8),
+        legend.text = element_text(size = 12),
         panel.grid.major.y = element_blank())
 ```
 
@@ -2417,10 +2418,10 @@ ggplot(how_often_plot_country,
   scale_x_continuous(labels = \(x) paste0(x, "%"),
                      limits = c(0, 100), breaks = seq(0, 100, 25)) +
   labs(x = NULL, y = NULL) +
-  theme_minimal() +
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme_minimal(base_size = 14) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
   theme(legend.position = "top",
-        legend.text = element_text(size = 8),
+        legend.text = element_text(size = 12),
         panel.grid.major.y = element_blank())
 ```
 
@@ -2500,17 +2501,17 @@ ggplot(misclassify_plot_selfeth,
             size = 2.5) +
   geom_text(data = pct_yes_selfeth,
             aes(x = 102, y = SelfEthnicity, label = sprintf("%.0f%%", pct_yes)),
-            inherit.aes = FALSE, size = 3, hjust = 0) +
+            inherit.aes = FALSE, size = 4, hjust = 0) +
   scale_fill_manual(values = misclassify_colors, name = NULL,
                     breaks = misclassify_levels) +
   scale_x_continuous(labels = \(x) paste0(x, "%"),
                      limits = c(0, 115), breaks = seq(0, 100, 25)) +
   labs(x = NULL, y = NULL, caption = "% to the right of bars = total % Yes") +
-  theme_minimal() +
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme_minimal(base_size = 14) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
   theme(legend.position = "top",
-        legend.text = element_text(size = 8),
-        plot.caption = element_text(size = 8, hjust = 1),
+        legend.text = element_text(size = 12),
+        plot.caption = element_text(size = 11, hjust = 1),
         panel.grid.major.y = element_blank())
 ```
 
@@ -2571,17 +2572,17 @@ ggplot(misclassify_plot_country,
             size = 2.5) +
   geom_text(data = pct_yes_country,
             aes(x = 102, y = `Country of residence`, label = sprintf("%.0f%%", pct_yes)),
-            inherit.aes = FALSE, size = 3, hjust = 0) +
+            inherit.aes = FALSE, size = 4, hjust = 0) +
   scale_fill_manual(values = misclassify_colors, name = NULL,
                     breaks = misclassify_levels) +
   scale_x_continuous(labels = \(x) paste0(x, "%"),
                      limits = c(0, 115), breaks = seq(0, 100, 25)) +
   labs(x = NULL, y = NULL, caption = "% to the right of bars = total % Yes") +
-  theme_minimal() +
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme_minimal(base_size = 14) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
   theme(legend.position = "top",
-        legend.text = element_text(size = 8),
-        plot.caption = element_text(size = 8, hjust = 1),
+        legend.text = element_text(size = 12),
+        plot.caption = element_text(size = 11, hjust = 1),
         panel.grid.major.y = element_blank())
 ```
 
@@ -2640,7 +2641,7 @@ ggplot(bias_comparison, aes(x = response, y = pct, fill = source)) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)), limits = c(0, NA)) +
   scale_fill_manual(values = c("Pew Research Center" = "#91bfdb", "Our survey (all)" = "#4575b4", "Our survey (US residents)" = "#2a4d6e"), name = NULL) +
   labs(x = NULL, y = "Percentage (%)") +
-  theme_minimal() +
+  theme_minimal(base_size = 14) +
   theme(legend.position = "top")
 ```
 
@@ -2701,7 +2702,7 @@ ggplot(concord_comparison, aes(x = response, y = pct, fill = source)) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)), limits = c(0, NA)) +
   scale_fill_manual(values = c("Kaiser Family Foundation" = "#91bfdb", "Our survey (all)" = "#4575b4", "Our survey (US residents)" = "#2a4d6e"), name = NULL) +
   labs(x = NULL, y = "Percentage (%)") +
-  theme_minimal() +
+  theme_minimal(base_size = 14) +
   theme(legend.position = "top")
 ```
 
@@ -2799,7 +2800,7 @@ ggplot(comfort_plot, aes(y = source, xmin = xmin, xmax = xmax, fill = level)) +
             size = 3) +
   geom_text(data = net_labels,
             aes(x = x_end + 2, y = source, label = sprintf("%+.1f%%", net)),
-            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+            inherit.aes = FALSE, size = 4.5, hjust = 0) +
   geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
   scale_fill_manual(
     values = c("Extremely or Somewhat\nUncomfortable" = "#d73027", "Neither" = "#cccccc", "Extremely or Somewhat\nComfortable" = "#4575b4"),
@@ -2810,9 +2811,9 @@ ggplot(comfort_plot, aes(y = source, xmin = xmin, xmax = xmax, fill = level)) +
                      expand = expansion(mult = c(0.05, 0.12))) +
   facet_wrap(~ factor, ncol = 1) +
   labs(x = NULL, y = NULL) +
-  theme_minimal() +
+  theme_minimal(base_size = 14) +
   theme(legend.position = "top",
-        strip.text = element_text(face = "bold"),
+        strip.text = element_text(face = "bold", size = 14),
         panel.grid.major.y = element_blank())
 ```
 
@@ -2915,7 +2916,7 @@ ggplot(agree_plot, aes(y = source, xmin = xmin, xmax = xmax, fill = level)) +
             size = 3) +
   geom_text(data = net_labels,
             aes(x = x_end + 2, y = source, label = sprintf("%+.1f%%", net)),
-            inherit.aes = FALSE, size = 3.5, hjust = 0) +
+            inherit.aes = FALSE, size = 4.5, hjust = 0) +
   geom_vline(xintercept = 0, linewidth = 0.3, alpha = 0.3) +
   scale_fill_manual(
     values = c("Strongly or Somewhat\nDisagree" = "#d73027", "Neither" = "#cccccc", "Strongly or Somewhat\nAgree" = "#4575b4"),
@@ -2926,9 +2927,9 @@ ggplot(agree_plot, aes(y = source, xmin = xmin, xmax = xmax, fill = level)) +
                      expand = expansion(mult = c(0.05, 0.12))) +
   facet_wrap(~ statement, ncol = 1) +
   labs(x = NULL, y = NULL) +
-  theme_minimal() +
+  theme_minimal(base_size = 14) +
   theme(legend.position = "top",
-        strip.text = element_text(face = "bold", size = 9),
+        strip.text = element_text(face = "bold", size = 12),
         panel.grid.major.y = element_blank())
 ```
 
