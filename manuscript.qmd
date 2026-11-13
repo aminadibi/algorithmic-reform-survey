@@ -110,7 +110,7 @@ simplify_reaction <- function(x) {
 # Load the cleaned and merged responses from Zenodo (DOI-versioned archive)
 responses <- read_csv("https://zenodo.org/records/20403996/files/algorithmic_reform_survey.csv?download=1")
 
-age_group_levels <- c("15–24", "25–44", "45–59", "60–74", "75+")
+age_group_levels <- c("18–24", "25–44", "45–59", "60–74", "75+")
 
 # Derive `Age group` from continuous `Age` when present (e.g. internal RDS);
 # the de-identified public CSV (see de-identify.R) already ships with this column.
@@ -174,7 +174,7 @@ Of 1,050 responses received, 48 participants revoked consent, 6 timed out, and 2
 
 ### Perceptions of Race and Ethnicity
 
-Participants were asked to describe what "race or ethnicity" meant to them (@supptab-codebook-race). Of 993 substantive responses, many defined race and ethnicity in terms of physical traits and skin color (37.3%), place of origin (26.8%), ancestry (22.8%), and genetics (17.0%), while fewer described them as social constructs (2.9%). About 12.4% explicitly defined race and ethnicity as distinct concepts—the former relating to visible physical characteristics and the latter relating to cultural background or upbringing. Some (7.0%) described race and ethnicity as central to their identity, providing togetherness, belonging, and pride. A small subset (4.5%) noted perceived differences in disease risk across racial or ethnic groups.
+Participants were asked to describe what "race or ethnicity" meant to them (@supptab-codebook-race). Of 993 substantive responses, many defined race and ethnicity in terms of physical traits and skin color (37.3%), place of origin (26.8%), ancestry (22.8%), and genetics (17.0%), while fewer described them as social constructs (2.9%). About 12.4% explicitly defined race and ethnicity as distinct concepts—the former relating to visible physical characteristics and the latter relating to cultural background or upbringing. Some (7.0%) described race and ethnicity as central to their sense of community, providing togetherness, belonging, and pride. A small subset (4.5%) noted perceived differences in disease risk across racial or ethnic groups.
 
 ### Comfort Level for Different Predictors
 
